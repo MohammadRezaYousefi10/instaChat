@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
     subheading: { fontSize: 14, color: Colors.onSurfaceVariant, marginBottom: 32, lineHeight: 20 },
     form: { gap: 16 },
     field: { gap: 6 },
-    fieldLabel: { fontSize: 11, fontWeight: "500", color: Colors.onSurfaceVariant, letterSpacing: 0.2 },
+    fieldLabel: {fontSize: 11, fontWeight: "500", color: Colors.onSurfaceVariant, letterSpacing: 0.2 },
     input: {
         backgroundColor: Colors.surfaceLow,
         borderRadius: 14,
@@ -39,8 +39,8 @@ export const styles = StyleSheet.create({
     },
     atSign: { paddingLeft: 16, fontSize: 15, fontWeight: "600", color: Colors.onSurfaceVariant },
     handleInput: { flex: 1, backgroundColor: "transparent", borderWidth: 0 },
-    toggleRow: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 },
-    toggleText: { fontSize: 13, color: Colors.onSurfaceVariant },
+    toggleRow: {  flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 },
+    toggleText: { fontSize: 13, color: Colors.onSurfaceVariant  },
     toggleLink: { fontSize: 13, fontWeight: "600", color: Colors.primary },
     btnWrapper: { marginTop: 8, borderRadius: 18, overflow: "hidden" },
     btn: {
