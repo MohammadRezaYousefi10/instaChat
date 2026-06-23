@@ -15,7 +15,9 @@ export const dummyStoriesData = [
                     handle: "ethanparker",
                     avatar: "https://i.pravatar.cc/150?img=12",
                 },
-                mediaUrl: "https://picsum.photos/id/1011/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1011/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRw7yiBAbjH0yeDnCw9DGglQAZh4YTioAqBQ98mrtEX3w&s=10", 
                 mediaType: "image",
                 createdAt: "2026-06-01T10:53:04.242Z",
             },
@@ -27,7 +29,9 @@ export const dummyStoriesData = [
                     handle: "ethanparker",
                     avatar: "https://i.pravatar.cc/150?img=12",
                 },
-                mediaUrl: "https://picsum.photos/id/1015/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1015/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTAo_ph_j67_sBcxXuQl_rKD2KsdV2oI_VVkCUitKOZyQ&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T12:15:00.000Z",
             },
@@ -49,7 +53,9 @@ export const dummyStoriesData = [
                     handle: "oliviabennett",
                     avatar: "https://i.pravatar.cc/150?img=13",
                 },
-                mediaUrl: "https://picsum.photos/id/1025/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /*  mediaUrl: "https://picsum.photos/id/1025/800/1200", */
+                mediaUrl: "https://image.demorgen.be/59534565/width/2480/neymar",
                 mediaType: "image",
                 createdAt: "2026-06-01T09:45:00.000Z",
             },
@@ -71,7 +77,9 @@ export const dummyStoriesData = [
                     handle: "liamcarter",
                     avatar: "https://i.pravatar.cc/150?img=14",
                 },
-                mediaUrl: "https://picsum.photos/id/1043/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1043/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdiyfGGIZrgNCI-XnnvGa5tjMXIrLVHgScYRuvSwSyaCsoL0lMiTcXOp4y&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T08:20:00.000Z",
             },
@@ -93,7 +101,9 @@ export const dummyStoriesData = [
                     handle: "sophiareed",
                     avatar: "https://i.pravatar.cc/150?img=15",
                 },
-                mediaUrl: "https://picsum.photos/id/1050/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1050/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRymAtxSPZNHHTUykoDzsfCSfo0QDmrmbjdOOZEzykozZBDGGYVaejT_bDF&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T11:00:00.000Z",
             },
@@ -105,6 +115,8 @@ export const dummyStoriesData = [
                     handle: "sophiareed",
                     avatar: "https://i.pravatar.cc/150?img=15",
                 },
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1060/800/1200", */
                 mediaUrl: "https://picsum.photos/id/1060/800/1200",
                 mediaType: "image",
                 createdAt: "2026-06-01T11:30:00.000Z",
@@ -127,7 +139,9 @@ export const dummyStoriesData = [
                     handle: "noahmitchell",
                     avatar: "https://i.pravatar.cc/150?img=16",
                 },
-                mediaUrl: "https://picsum.photos/id/1074/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1074/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSo1pnQIjR50Rv7hwbDcsGN88zIkcfQUzeraqzH59x43maFtshYlYgUZw0&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T07:45:00.000Z",
             },
@@ -149,7 +163,9 @@ export const dummyStoriesData = [
                     handle: "avacollins",
                     avatar: "https://i.pravatar.cc/150?img=17",
                 },
-                mediaUrl: "https://picsum.photos/id/1084/800/1200",
+                /* in aksi ke gozashte filtere baraye iran */
+                /* mediaUrl: "https://picsum.photos/id/1084/800/1200", */
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScQUB32TynuTTyru92k8F3PO1F9OiYzIHZ7mAGhdIwLA&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T13:00:00.000Z",
             },
