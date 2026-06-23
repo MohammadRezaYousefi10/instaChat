@@ -25,6 +25,7 @@ export default function ConvoItem({convo , selected , onPress} : ConvoItemProbs)
         ? "🎥 video"
         : "Start a Conversation");
   return (
+    
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
