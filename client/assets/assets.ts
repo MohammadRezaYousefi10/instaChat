@@ -117,7 +117,7 @@ export const dummyStoriesData = [
                 },
                 /* in aksi ke gozashte filtere baraye iran */
                 /* mediaUrl: "https://picsum.photos/id/1060/800/1200", */
-                mediaUrl: "https://picsum.photos/id/1060/800/1200",
+                mediaUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW4twfDJBmuCSsL_XVrWtY9pPn6TfMxFS2Ov4xC-oAow&s=10",
                 mediaType: "image",
                 createdAt: "2026-06-01T11:30:00.000Z",
             },

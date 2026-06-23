@@ -13,7 +13,7 @@ import StoryViewer from '@/components/StoryViewer';
 import ConvoItem from '@/components/ConvoItem';
 
 export default function MessageScreen() {
-  const [conversations , setConversaion] = useState<Conversation[]>([]);
+  const [conversations , setConversation] = useState<Conversation[]>([]);
   const [search , setSearch] = useState("");
   const [loading , setLoading] = useState(false);
   const [selectedStory , setSelectedStory] = useState<UserStory | null>(null);
@@ -23,7 +23,7 @@ export default function MessageScreen() {
   const fetchConversation = () =>{
     setLoading(true)
     setTimeout(() => {
-      setConversaion(dummyConversationData as any)
+      setConversation(dummyConversationData as any)
       setLoading(false)
     }, 1000);
   }
