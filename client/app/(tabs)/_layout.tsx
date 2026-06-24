@@ -4,7 +4,7 @@ import { Tabs } from 'expo-router'
 import { Colors } from '@/constants/Colors'
 import { Ionicons } from '@expo/vector-icons'
 
-export default function TavLayout() {
+export default function TabLayout() {
   return (
     <Tabs screenOptions={{
       headerShown:false ,

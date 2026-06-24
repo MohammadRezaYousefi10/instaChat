@@ -71,7 +71,7 @@ export default function StoriesBar({onViewStoty} : StoriesBarProbs) {
                    <Avatar name={us.user.name} src={us.user.avatar} size={52}/>
                 </View>
                 <Text style={styles.label} numberOfLines={1}>
-                    {us.user.name.split(" ")[0]}
+                    {us.user.name?.split(" ")[0] || us.user.name || "User"}
                 </Text>
             </TouchableOpacity>
         )

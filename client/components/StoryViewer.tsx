@@ -9,12 +9,12 @@ import { VideoView , useVideoPlayer } from 'expo-video';
 const STORY_DURATION = 5000;
 
 
-interface Probs {
+interface Props {
     userStory : UserStory;
     onClose : () => void
 }
 
-export default function StoryViewer({userStory  , onClose} : Probs) {
+export default function StoryViewer({userStory  , onClose} : Props) {
 
     const [currentIndex , setCurrentIndex] = useState(0);
 
