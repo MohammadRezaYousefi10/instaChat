@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { dummyUserProfile } from "@/assets/assets";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/assets/styles/ProfileScreen.styles";
@@ -16,19 +16,22 @@ import Avatar from "@/components/Avatar";
 import { TextInput } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import { api, useApp } from "@/context/AppContext";
 
 export default function profile() {
-  const { auth } = { auth: { user: dummyUserProfile } };
+  const { auth , logout , updateUser} = useApp();
 
   const user = auth.user;
+
   const [editMode, setEditMode] = useState(false);
   const [profileName, setProfileName] = useState(auth.user?.name || "");
   const [profileHandle, setProfileHandle] = useState(auth.user?.handle || "");
   const [profileBio, setProfileBio] = useState(auth.user?.bio || "");
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [savedAvatar, setSavedAvatar] = useState<string | null>(user?.avatar || null);
 
-  const displayAvatar = avatarUri || user?.avatar;
+  const displayAvatar = avatarUri || savedAvatar || user?.avatar;
 
   const pickAvatar = async () => {
     const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -49,19 +52,65 @@ export default function profile() {
 
   const saveProfile = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setEditMode(false);
-      setAvatarUri(null);
-      setLoading(false);
-    }, 2000);
+    try {
+      const formData = new FormData();
+      formData.append('name' , profileName)
+      formData.append('handle' , profileHandle)
+      formData.append('bio' , profileBio)
+      if (avatarUri) {
+        formData.append('avatar' , {
+          uri: avatarUri ,
+          type: "image/jpeg" ,
+          name: "avatar.jpg"
+        } as any) 
+      }
+
+      const { data } = await api.put('/api/users/profile' , formData  , {
+        headers: {"Content-Type" : "multipart/form-data"}
+      })
+
+      if(data.success){
+        await updateUser(data.user)
+        if (data.user.avatar) {
+
+          setSavedAvatar(data.user.avatar)
+          Alert.alert("Success" , "Profile updated!" )
+          setEditMode(false)
+          setAvatarUri(null)
+        }
+      }
+    } catch (err : any) {
+      Alert.alert("Error" , err?.response?.data?.message || "Failed to updated profile" )
+    }finally {
+      setLoading(false)
+    }
   };
 
   const handleLogout = async () => {
     Alert.alert("Sing Out" , "Are you sure you want to sing out?" , [{
       text: "Cancel" , style: "cancel"
-    } , {text: "Sing Out" , style: "destructive" , onPress : () => {}}
+    } , {text: "Sing Out" , style: "destructive" , onPress : logout}
   ])
   };
+
+  const getUser = async () => {
+    try {
+      const {data} = await api.get("/api/users/profile");
+      setProfileName(data.user.name)
+      setProfileHandle(data.user.handle)
+      setProfileBio(data.user.bio)
+      if (data.user.avatar) {
+        setSavedAvatar(data.user.avatar)
+        setAvatarUri(null)
+      }
+    } catch (err:any) {
+      console.log(err.message)
+    }
+  }
+
+  useEffect( () => {
+    getUser()
+  } , [])
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -98,10 +147,10 @@ export default function profile() {
 
           {!editMode && (
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.name}</Text>
-              <Text style={styles.userHandle}>@{user?.handle}</Text>
+              <Text style={styles.userName}>{profileName}</Text>
+              <Text style={styles.userHandle}>@{profileHandle}</Text>
               <Text style={styles.userEmail}>{user?.email}</Text>
-              {user?.bio && <Text style={styles.userBio}>{user?.bio}</Text>}
+              {user?.bio && <Text style={styles.userBio}>{profileBio}</Text>}
             </View>
           )}
         </View>
@@ -172,7 +221,10 @@ export default function profile() {
               </LinearGradient>
             </TouchableOpacity>
             {/* cancel button */}
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditMode(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => {
+              setEditMode(false) 
+              setAvatarUri(null)
+            }}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
