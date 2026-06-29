@@ -3,6 +3,7 @@ import { AuthRequest } from "../middlewares/auth.js";
 import User from "../models/User.js";
 import cloudinary from "../config/cloudnairy.js";
 import { Readable } from "stream";
+import { broadcastUserUpdate } from "../socket/socketManager.js";
 
 // Get all users
 
@@ -100,6 +101,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   }
 
   const updated = await User.findByIdAndUpdate(req.user!.id , updateData , {returnDocument: "after"})
+
+  if(updated) {
+    broadcastUserUpdate(updated)
+  }
 
   res.json({success : true , user:updated})
 };

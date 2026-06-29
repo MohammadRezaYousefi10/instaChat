@@ -2,8 +2,9 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.js";
 import Conversation from "../models/Conversation.js";
 import cloudinary from "../config/cloudnairy.js";
-import { Readable } from "node:stream";
 import Message from "../models/Message.js";
+import { Readable } from "stream";
+import { handleConversationEvent } from "../socket/socketManager.js";
 
 // Helper : find convo between two users 
 async function findConversation (userId : string , otherId : string){
@@ -168,6 +169,10 @@ export const deleteConversation = async (req:AuthRequest , res : Response) => {
             return;
         }
         // notify other participants before deleting
+        await handleConversationEvent(userId , String(conversationId) , {type: "chat_deleted" , conversationId});
+
+        // Delete all messages in the conversation
+        await Message.deleteMany({conversationId})
 
 
         // delete the conversation itself
