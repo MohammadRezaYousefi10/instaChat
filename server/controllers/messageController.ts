@@ -22,6 +22,8 @@ export const getOrCreateConversation = async (req:AuthRequest , res : Response) 
     const userId = req.user!.id;
     const targetUserId = String(req.params.targetUserId)
 
+   
+
     let conversation : any = await findConversation(userId , targetUserId)
 
     if (conversation) {
@@ -34,10 +36,12 @@ export const getOrCreateConversation = async (req:AuthRequest , res : Response) 
         await conversation.populate("participants" , "name email handle avatar isOnline lastSeen");
     }
 
-    const other = (conversation.participants as any[]).find((p : any) => String(p._id !== userId))
+
+    const other = (conversation.participants as any[]).find((p : any) => p._id !== userId)
+
     res.json({
         success:true,
-        conversation: {_id: conversation._id , participants : other , lastMessage : conversation.lastMessage}
+        conversation: {_id: conversation._id , participant : other , lastMessage : conversation.lastMessage}
     })
 }
 
@@ -49,7 +53,7 @@ export const getConversations = async (req:AuthRequest , res : Response) => {
   ("lastMessage").sort({updatedAt : -1})
 
   const shaped = conversations.map((c) => {
-    const other = (c.participants as any).find((p:any) => String(p._id !== userId))
+    const other = (c.participants as any).find((p:any) => p._id !== userId)
     return { _id : c._id , isGroup : false , participant : other ,
          lastMessage : c.lastMessage , updatedAt : c.updatedAt}
   })

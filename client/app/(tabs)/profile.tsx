@@ -7,7 +7,6 @@ import {
   Alert,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { dummyUserProfile } from "@/assets/assets";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/assets/styles/ProfileScreen.styles";
 import { Ionicons } from "@expo/vector-icons";

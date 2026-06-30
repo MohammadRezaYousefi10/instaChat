@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Conversation, UserStory } from "@/types";
 import { useRouter } from "expo-router";
-import { dummyConversationData } from "@/assets/assets";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/assets/styles/MessagesScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,21 +10,25 @@ import { FlatList, TextInput } from "react-native-gesture-handler";
 import StoriesBar from "@/components/StoriesBar";
 import StoryViewer from "@/components/StoryViewer";
 import ConvoItem from "@/components/ConvoItem";
+import { api, useApp } from "@/context/AppContext";
 
 export default function MessageScreen() {
-  const [conversations, setConversation] = useState<Conversation[]>([]);
+   
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
+  const {setSelectedConversation , conversations , setConversations , selectedConversation }= useApp();
 
   const router = useRouter();
 
   const fetchConversation = () => {
     setLoading(true);
-    setTimeout(() => {
-      setConversation(dummyConversationData as any);
-      setLoading(false);
-    }, 1000);
+    api.get<{success :boolean; conversations:Conversation[]}>("/api/messages/conversations").then(({data}) => {
+      if(data.success) setConversations(data.conversations)
+        setLoading(false)
+    }).catch(()=>{
+      setTimeout(fetchConversation , 1000);
+    })
   };
 
   useEffect(() => {
@@ -42,6 +45,7 @@ export default function MessageScreen() {
     : conversations;
 
   const openConvo = (c: Conversation) => {
+    setSelectedConversation(c)
     router.push(`/chat/${c._id}`);
   };
 
