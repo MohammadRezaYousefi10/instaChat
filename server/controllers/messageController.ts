@@ -65,7 +65,7 @@ export const getConversations = async (req:AuthRequest , res : Response) => {
 // Send a message 
 export const sendMessage = async (req:AuthRequest , res : Response) => {
     const senderId = req.user!.id;
-    const {receiverId , conversationId , text} = req.body;
+    const {receiverId , conversationId , text , clientId} = req.body;
     const file = req.file;
 
     if((!receiverId && !conversationId) || (!text?.trim() && !file)) {
@@ -110,11 +110,11 @@ export const sendMessage = async (req:AuthRequest , res : Response) => {
         conversation = await Conversation.findOne({ _id : conversationId , participants : {$in : [senderId]}})
     }else {
         conversation = await findConversation(senderId , receiverId) 
-        if(!conversation) {
+        /* if(!conversation) {
             conversation = await Conversation.create({
                 participants: [senderId , receiverId]
             })
-        }
+        } */
     }
 
     if(!conversation){
@@ -128,12 +128,21 @@ export const sendMessage = async (req:AuthRequest , res : Response) => {
         text: text?.trim() ,
         mediaUrl: mediaUrl || undefined,
         mediaType, 
+        clientId
     })
+
+    const savedMessage = await Message.findById(message._id).lean();
+
     conversation.lastMessage = message._id as any;
     conversation.updatedAt = new Date();
     await conversation.save()
 
-    res.status(201).json({success : true , message})
+    //res.status(201).json({success : true , message})
+    res.status(201).json({
+    success: true,
+    message : savedMessage,
+    conversationId: conversation._id,
+});
 }
 
 // Get all messages in a conversation

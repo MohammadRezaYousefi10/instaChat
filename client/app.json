@@ -4,7 +4,7 @@
     "slug": "instachat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/ghost.png",
     "scheme": "client",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,6 +12,11 @@
       "supportsTablet": true
     },
     "android": {
+      "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#f5f6f7",
+      "translucent": false
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -19,7 +24,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.the_kabi.instachat"
     },
     "web": {
       "output": "static",
@@ -30,7 +36,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/ghost.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -42,7 +48,9 @@
       "expo-video",
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@clerk/expo"
+  
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,8 +1,9 @@
 import { Dimensions, StyleSheet } from "react-native";
-
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+import { ColorPalette } from "../../constants/Colors";
 
-export const styles = StyleSheet.create({
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
     container: { flex: 1, backgroundColor: "#000" },
     progressRow: {
         position: "absolute",

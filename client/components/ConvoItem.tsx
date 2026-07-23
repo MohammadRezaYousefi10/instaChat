@@ -1,9 +1,11 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { Conversation } from '@/types'
-import { styles } from '@/assets/styles/ConvoItem.styles';
+// import { styles } from '@/assets/styles/ConvoItem.styles';
 import Avatar from './Avatar';
 import { formatTime } from '@/utils/formatTime';
+import { useTheme } from '@/context/ThemeContext';
+import { getStyles } from '@/assets/styles/ConvoItem.styles';
 
 interface ConvoItemProbs {
     convo : Conversation ,
@@ -12,6 +14,9 @@ interface ConvoItemProbs {
 }
 
 export default function ConvoItem({convo , selected , onPress} : ConvoItemProbs) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const name = convo.participant?.name || "User";
   const avatar = convo.participant?.avatar;
   const online = convo.participant?.isOnline;
@@ -43,11 +48,12 @@ export default function ConvoItem({convo , selected , onPress} : ConvoItemProbs)
               {sub}
             </Text>
           </View>
-          {convo.updatedAt && <Text>{formatTime(convo.updatedAt)}</Text>}
+          {convo.updatedAt && <Text style={styles.lastMsg}>{formatTime(convo.updatedAt)}</Text>}
         </View>
         <Text style={styles.lastMsg} numberOfLines={1}>
           {lastMsg}
         </Text>
+       {/* <View style={styles.divider} /> */}
       </View>
     </TouchableOpacity>
   );

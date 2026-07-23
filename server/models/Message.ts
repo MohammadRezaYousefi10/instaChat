@@ -8,7 +8,9 @@ export interface IMessage extends Document {
     mediaUrl?:string;
     mediaType?: "image" | "video"
     read : boolean;
-    createdAt : Date
+    createdAt : Date;
+    clientId?:string;
+   
 }
 
 const MessageSchema = new Schema<IMessage>({
@@ -19,6 +21,10 @@ const MessageSchema = new Schema<IMessage>({
     mediaUrl: {type : String},
     mediaType: {type : String , enum: ["image" , "video"]},
     read: {type : Boolean , default: false},
+    clientId:{
+    type:String,
+    index:true,
+}
 
 } , {timestamps:true})
 

@@ -1,7 +1,8 @@
 import { StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { ColorPalette } from "../../constants/Colors";
 
-export const styles = StyleSheet.create({
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
     row: { flexDirection: "row", marginBottom: 2 },
     rowMe: { justifyContent: "flex-end" },
     rowThem: { justifyContent: "flex-start" },
@@ -17,12 +18,13 @@ export const styles = StyleSheet.create({
     bubbleThem: {
         borderRadius: 20,
         borderBottomLeftRadius: 4,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: colors.surface
+        // backgroundColor: "#f0f0f0",
     },
     senderName: {
         fontSize: 10,
         fontWeight: "700",
-        color: Colors.primary,
+        color: colors.primary,
         paddingHorizontal: 14,
         paddingTop: 8,
     },
@@ -35,8 +37,8 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
     },
-    msgTextMe: { color: Colors.onPrimary },
-    msgTextThem: { color: Colors.onSurface },
+    msgTextMe: { color: colors.surface },
+    msgTextThem: { color: colors.onSurface },
     footer: {
         flexDirection: "row",
         alignItems: "center",
@@ -47,6 +49,6 @@ export const styles = StyleSheet.create({
     footerRight: { justifyContent: "flex-end" },
     footerLeft: { justifyContent: "flex-start" },
     timeText: { fontSize: 11 },
-    timeMe: { color: `${Colors.onPrimary}88` },
-    timeThem: { color: Colors.onSurfaceVariant },
+    timeMe: { color: `${colors.onPrimary}88` },
+    timeThem: { color: colors.onSurfaceVariant },
 });

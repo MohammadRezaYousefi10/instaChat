@@ -1,30 +1,39 @@
 import { View, Text, TouchableOpacity, Image, Linking } from "react-native";
 import React from "react";
 import { Message } from "@/types";
-import { styles } from "@/assets/styles/Bubble.styles";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors } from "@/constants/Colors";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { formatTime } from "@/utils/formatTime";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/Bubble.styles";
+import ImageViewerModal from "./ImageViewerModal";
+import MessageStatus2 from "./chat/MessageStatus";
+import { chatService } from "@/services/chats/chat.service";
 
 interface BubbleProps {
   msg: Message;
   isMine: boolean;
 }
 
+
+
 export default function Bubble({ msg, isMine }: BubbleProps) {
   const content = <BubbleContent msg={msg} isMine={isMine} />;
+
+  const {colors } = useTheme()
+  const styles = getStyles(colors);
 
   return (
     <View style={[styles.row, isMine ? styles.rowMe : styles.rowThem]}>
       {isMine ? (
         <LinearGradient
-          colors={[Colors.primary, Colors.primaryContainer]}
+          colors={[colors.primary, colors.primaryDim]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.bubble, styles.bubbleMe]}
         >
+          
           {content}
         </LinearGradient>
       ) : (
@@ -35,12 +44,16 @@ export default function Bubble({ msg, isMine }: BubbleProps) {
 }
 
 function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
+  const {colors } = useTheme()
+  const styles = getStyles(colors);
   return (
+   
     <View>
       {msg.mediaUrl && (
         <View style={styles.mediaWrapper}>
           {msg.mediaType === "image" ? (
-            <TouchableOpacity onPress={() => Linking.openURL(msg.mediaUrl!)}>
+            // onPress={() => Linking.openURL(msg.mediaUrl!)} when we open photo user go to this link
+            <TouchableOpacity >
               <Image
                 source={{ uri: msg.mediaUrl }}
                 style={styles.mediaImage}
@@ -60,8 +73,11 @@ function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
             isMine ? styles.msgTextMe : styles.msgTextThem,
           ]}
         >
+     
           {msg.text}
+            
         </Text>
+        
       )}
 
       <View
@@ -73,12 +89,36 @@ function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
           {formatTime(msg.createdAt)}
         </Text>
         {isMine && (
-            <Ionicons name={msg.read ? "checkmark-done" : "checkmark"} size={12} 
-            color={msg.read ? Colors.online : `${Colors.onPrimary}88`}/>
-        )}
-      </View>
+          <>
+             {/* <Ionicons name={msg.read ? "checkmark-done" : "checkmark"} size={12} 
+            color={msg.read ? colors.online : `${colors.onPrimary}88`}/> */}
+              <MessageStatus2 status={msg.status } read={msg.read}/>
 
+                {msg.status==="failed" && (
+<TouchableOpacity
+    onPress={()=>
+        chatService.retry(
+            msg
+        )
+    }
+>
+    <Ionicons name="refresh-outline" size={24}/>
+
+</TouchableOpacity>
+
+)}
+       
+            </>
+        )}
+             
+     
+      </View> 
+
+          
     </View>
+     
+
+    
   );
 }
 

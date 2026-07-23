@@ -4,6 +4,9 @@ import User from "../models/User.js";
 import cloudinary from "../config/cloudnairy.js";
 import { Readable } from "stream";
 import { broadcastUserUpdate } from "../socket/socketManager.js";
+import Conversation from "../models/Conversation.js";
+import Message from "../models/Message.js";
+import { clerkClient } from "@clerk/express";
 
 // Get all users
 
@@ -108,3 +111,51 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 
   res.json({success : true , user:updated})
 };
+
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthenticated" });
+
+    await Conversation.deleteMany({ participants: userId });
+    await Message.deleteMany({ sender: userId });
+    await User.findByIdAndDelete(userId);
+    // اگه Clerk هم داری، حساب اونجا رو هم پاک کن:
+    await clerkClient.users.deleteUser(userId);
+
+    res.status(200).json({ success: true, message: "User account deleted" });
+  } catch (error: any) {
+    console.error("deleteAccount error:", error);
+    res.status(500).json({ success: false, message: error?.message || "Server Error" });
+  }
+};
+
+export const deleteProfileImage = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthenticated" });
+
+    // await Conversation.deleteMany({ participants: userId });
+    // await Message.deleteMany({ sender: userId });
+    const updated = await User.findByIdAndUpdate(userId , {avatar : ""}  , {returnDocument: "after"});
+    // اگه Clerk هم داری، حساب اونجا رو هم پاک کن:
+    // await clerkClient.users.deleteUser(userId);
+     if(updated) {
+    broadcastUserUpdate(updated)
+    }
+
+    res.status(200).json({ success: true, user:updated });
+  } catch (error: any) {
+    console.error("Profile Image deleted error:", error);
+    res.status(500).json({ success: false, message: error?.message || "Server Error" });
+  }
+
+};
+
+
+export const syncPhone = async (req: AuthRequest, res: Response) => {
+  const { phone } = req.body;
+  const user = await User.findByIdAndUpdate(req.user!.id, { $set: { phone } }, { new: true });
+  res.json({ success: true, user });
+}

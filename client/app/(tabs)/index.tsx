@@ -1,25 +1,32 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Conversation, UserStory } from "@/types";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/assets/styles/MessagesScreen.styles";
+// import { styles } from "@/assets/styles/MessagesScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/constants/Colors";
+// import { Colors } from "@/constants/Colors";
 import { FlatList, TextInput } from "react-native-gesture-handler";
 import StoriesBar from "@/components/StoriesBar";
 import StoryViewer from "@/components/StoryViewer";
 import ConvoItem from "@/components/ConvoItem";
 import { api, useApp } from "@/context/AppContext";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/MessagesScreen.styles";
 
 export default function MessageScreen() {
-   
+     
+
+  const { height } = Dimensions.get("window");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
   const {setSelectedConversation , conversations , setConversations , selectedConversation }= useApp();
 
   const router = useRouter();
+
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const fetchConversation = () => {
     setLoading(true);
@@ -60,16 +67,18 @@ export default function MessageScreen() {
           </View>
         </View>
       </View>
+   
 
       {/* search */}
       <View style={styles.searchRow}>
-        <Ionicons name="search" size={16} color={Colors.outlineVariant} />
+        <Ionicons name="search" size={16} color={colors.outlineVariant} />
         <TextInput
           style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
           placeholder="Search Conversations..."
-          placeholderTextColor={Colors.outlineVariant}
+          placeholderTextColor={colors.outlineVariant}
+          keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
         />
         {search.length > 0 && (
           <TouchableOpacity
@@ -80,7 +89,7 @@ export default function MessageScreen() {
             <Ionicons
               name="close-circle"
               size={16}
-              color={Colors.outlineVariant}
+              color={colors.outlineVariant}
             />
           </TouchableOpacity>
         )}
@@ -100,7 +109,7 @@ export default function MessageScreen() {
       <View style={styles.divider} />
       {/* Conversation list */}
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={Colors.primary} />
+        <ActivityIndicator style={{ height: height,  }} color={colors.primary} />
       ) : (
         <FlatList
           data={filtered}
@@ -118,7 +127,7 @@ export default function MessageScreen() {
               <Ionicons
                 name="chatbubbles-outline"
                 size={44}
-                color={Colors.outlineVariant}
+                color={colors.outlineVariant}
               />
               <Text style={styles.emptyTitle}>No conversations yet</Text>
               <Text style={styles.emptySubtitle}>
@@ -128,6 +137,7 @@ export default function MessageScreen() {
           }
         />
       )}
+      
     </SafeAreaView>
   );
 }
