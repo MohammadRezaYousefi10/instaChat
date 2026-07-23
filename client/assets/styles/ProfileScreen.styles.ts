@@ -1,8 +1,9 @@
 import { StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { ColorPalette } from "../../constants/Colors";
 
-export const styles = StyleSheet.create({
-    safe: { flex: 1, backgroundColor: Colors.surface },
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
+    safe: { flex: 1, backgroundColor: colors.surface },
     scroll: { paddingBottom: 40 },
     header: {
         flexDirection: "row",
@@ -12,7 +13,7 @@ export const styles = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 16,
     },
-    title: { fontSize: 22, fontWeight: "500", color: Colors.onSurface, letterSpacing: -0.5 },
+    title: { fontSize: 22, fontWeight: "500", color: colors.onSurface, letterSpacing: -0.5 },
     editBtn: {
         flexDirection: "row",
         alignItems: "center",
@@ -20,9 +21,9 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 12,
-        backgroundColor: Colors.surfaceLow,
+        backgroundColor: colors.surfaceLow,
     },
-    editBtnText: { fontSize: 13, fontWeight: "700", color: Colors.primary },
+    editBtnText: { fontSize: 13, fontWeight: "700", color: colors.primary },
     avatarSection: { alignItems: "center", paddingVertical: 24, gap: 16 },
     avatarWrapper: { position: "relative" },
     cameraOverlay: {
@@ -34,12 +35,12 @@ export const styles = StyleSheet.create({
         justifyContent: "center",
     },
     userInfo: { alignItems: "center", gap: 4 },
-    userName: { fontSize: 20, fontWeight: "500", color: Colors.onSurface, letterSpacing: -0.3 },
-    userHandle: { fontSize: 14, fontWeight: "500", color: Colors.primary },
-    userEmail: { fontSize: 13, color: Colors.onSurfaceVariant, opacity: 0.7 },
+    userName: { fontSize: 20, fontWeight: "500", color: colors.onSurface, letterSpacing: -0.3 },
+    userHandle: { fontSize: 14, fontWeight: "500", color: colors.primary },
+    userEmail: { fontSize: 13, color: colors.onSurfaceVariant, opacity: 0.7 },
     userBio: {
         fontSize: 13,
-        color: Colors.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
         textAlign: "center",
         maxWidth: 280,
         marginTop: 8,
@@ -47,34 +48,35 @@ export const styles = StyleSheet.create({
     },
     form: { paddingHorizontal: 20, gap: 16 },
     field: { gap: 6 },
-    fieldLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1, color: Colors.onSurfaceVariant, opacity: 0.6 },
+    fieldLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1, color: colors.onSurfaceVariant, opacity: 0.6 },
     input: {
-        backgroundColor: Colors.surfaceHigh,
+        backgroundColor: colors.surfaceHigh,
         borderRadius: 14,
         paddingHorizontal: 16,
         paddingVertical: 13,
         fontSize: 14,
-        color: Colors.onSurface,
+        color: colors.onSurface,
     },
     handleRow: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: Colors.surfaceHigh,
+        backgroundColor: colors.surfaceHigh,
         borderRadius: 14,
     },
-    atSign: { paddingLeft: 16, fontSize: 15, fontWeight: "500", color: Colors.onSurfaceVariant },
+
+    atSign: { paddingLeft: 16, fontSize: 15, fontWeight: "500", color: colors.onSurfaceVariant },
     handleInput: { flex: 1, backgroundColor: "transparent" },
     bioInput: { minHeight: 90, textAlignVertical: "top" },
-    saveWrapper: { borderRadius: 16, overflow: "hidden", marginTop: 4 },
+    saveWrapper: { borderRadius: 16, overflow: "hidden", marginTop: 4  },
     saveBtn: { paddingVertical: 15, alignItems: "center" },
-    saveBtnText: { fontSize: 15, fontWeight: "700", color: Colors.onPrimary },
+    saveBtnText: { fontSize: 15, fontWeight: "700", color: colors.onPrimary },
     cancelBtn: { alignItems: "center", paddingVertical: 12 },
-    cancelBtnText: { fontSize: 14, fontWeight: "600", color: Colors.onSurfaceVariant },
+    cancelBtnText: { fontSize: 14, fontWeight: "600", color: colors.onSurfaceVariant },
     signOutSection: {
         marginTop: 32,
         marginHorizontal: 20,
         borderTopWidth: 1,
-        borderTopColor: Colors.surfaceHigh,
+        borderTopColor: colors.surfaceHigh,
         paddingTop: 16,
     },
     signOutBtn: {
@@ -86,11 +88,11 @@ export const styles = StyleSheet.create({
         padding: 14,
         borderRadius: 14,
     },
-    signOutText: { fontSize: 14, fontWeight: "500", color: Colors.error },
+    signOutText: { fontSize: 14, fontWeight: "500", color: colors.error },
     optionsSection: {
         marginTop: 24,
         marginHorizontal: 20,
-        backgroundColor: Colors.surfaceLowest,
+        backgroundColor: colors.surfaceLowest,
         borderRadius: 16,
         overflow: "hidden",
     },
@@ -99,13 +101,13 @@ export const styles = StyleSheet.create({
         alignItems: "center",
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.surfaceHigh,
+        borderBottomColor: colors.surfaceHigh,
     },
     optionIcon: {
         width: 32,
         height: 32,
         borderRadius: 10,
-        backgroundColor: "#f1f1f1ff",
+        // backgroundColor: "#f1f1f1ff",
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
@@ -113,6 +115,26 @@ export const styles = StyleSheet.create({
     optionText: {
         flex: 1,
         fontSize: 15,
-        color: Colors.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
     },
+    text: { color: colors.primary, fontWeight: "600", fontSize: 14 },
+    handleRowBtn: {
+        flexDirection: "row",
+        alignItems: "baseline",    
+        gap:8,  
+    },
+    btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    alignSelf: "center",
+    backgroundColor: colors.surfaceDim,
+    borderRadius:14,
+    paddingHorizontal:8,
+  },
+feedback: {
+    marginTop: 10,
+    color: 'green',
+  },
 });

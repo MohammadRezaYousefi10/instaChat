@@ -1,10 +1,12 @@
 import { StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { ColorPalette } from "../../constants/Colors";
 
-export const styles = StyleSheet.create({
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
     container: {
         paddingHorizontal: 16,
         paddingVertical: 12,
+        paddingBottom: 36,
         gap: 16,
     },
     storyItem: { alignItems: "center", gap: 6 },
@@ -14,7 +16,7 @@ export const styles = StyleSheet.create({
         borderRadius: 28,
         borderWidth: 2,
         borderStyle: "dashed",
-        borderColor: Colors.outlineVariant,
+        borderColor: colors.outlineVariant,
         alignItems: "center",
         justifyContent: "center",
     },
@@ -22,12 +24,12 @@ export const styles = StyleSheet.create({
         padding: 2,
         borderRadius: 30,
         borderWidth: 2,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
     },
     label: {
         fontSize: 13,
         fontWeight: "500",
-        color: Colors.onSurface,
+        color: colors.onSurface,
         width: 64,
         textAlign: "center",
     },

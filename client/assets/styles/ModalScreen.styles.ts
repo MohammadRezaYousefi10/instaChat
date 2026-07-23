@@ -1,6 +1,8 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet } from "react-native";
+import { ColorPalette } from "../../constants/Colors";
 
-export const styles = StyleSheet.create({
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
     container: {
         flex: 1,
         alignItems: 'center',

@@ -1,61 +1,71 @@
-import { View, Text, Animated, Modal, TouchableOpacity, Image  } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
-import { UserStory } from '@/types'
-import { styles } from '@/assets/styles/StoryViewer.styles';
-import Avatar from './Avatar';
-import { Ionicons } from '@expo/vector-icons';
-import { VideoView , useVideoPlayer } from 'expo-video';
+import {
+  View,
+  Text,
+  Animated,
+  Modal,
+  TouchableOpacity,
+  Image,
+} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { UserStory } from "@/types";
+// import { styles } from '@/assets/styles/StoryViewer.styles';
+import Avatar from "./Avatar";
+import { Ionicons } from "@expo/vector-icons";
+import { VideoView, useVideoPlayer } from "expo-video";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/StoryViewer.styles";
 
 const STORY_DURATION = 5000;
 
-
 interface Props {
-    userStory : UserStory;
-    onClose : () => void
+  userStory: UserStory;
+  onClose: () => void;
 }
 
-export default function StoryViewer({userStory  , onClose} : Props) {
+export default function StoryViewer({ userStory, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
-    const [currentIndex , setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-    const progressAnim = useRef(new Animated.Value(0)).current;
-    const animRef = useRef<Animated.CompositeAnimation>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const animRef = useRef<Animated.CompositeAnimation>(null);
 
-    const story = userStory.stories[currentIndex]
+  const story = userStory.stories[currentIndex];
 
-    const startProgress = () => {
-      progressAnim.setValue(0);
-      animRef.current = Animated.timing(progressAnim , {
-        toValue: 1 ,
-        duration: STORY_DURATION ,
-        useNativeDriver : false ,
-      })
-      animRef.current.start(({finished}) => {
-        if (finished) {
-          goNext();
-        }
-      })
+  const startProgress = () => {
+    progressAnim.setValue(0);
+    animRef.current = Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: STORY_DURATION,
+      useNativeDriver: false,
+    });
+    animRef.current.start(({ finished }) => {
+      if (finished) {
+        goNext();
+      }
+    });
+  };
+
+  useEffect(() => {
+    startProgress();
+    return () => animRef.current?.stop();
+  }, [currentIndex]);
+
+  const goNext = () => {
+    animRef.current?.stop();
+    if (currentIndex < userStory.stories.length - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      onClose();
     }
-
-    useEffect(() => {
-        startProgress();
-        return () => animRef.current?.stop();
-    } , [currentIndex])
-
-    const goNext = () => {
-        animRef.current?.stop();
-        if (currentIndex < userStory.stories.length - 1 ) {
-          setCurrentIndex((i) => i + 1);
-        }else{
-          onClose();
-        }
+  };
+  const goPrev = () => {
+    animRef.current?.stop();
+    if (currentIndex > 0) {
+      setCurrentIndex((i) => i - 1);
     }
-    const goPrev = () => {
-        animRef.current?.stop();
-        if (currentIndex > 0) {
-          setCurrentIndex((i) => i - 1);
-        }
-    }
+  };
   return (
     <Modal visible animationType="fade" statusBarTranslucent>
       <View style={styles.container}>
@@ -102,7 +112,7 @@ export default function StoryViewer({userStory  , onClose} : Props) {
         {/* Media */}
 
         {story.mediaType === "video" ? (
-          <StoryVideoPlayer uri={story.mediaUrl} style={styles.media}/>
+          <StoryVideoPlayer uri={story.mediaUrl} style={styles.media} />
         ) : (
           <Image
             source={{ uri: story.mediaUrl }}
@@ -112,19 +122,19 @@ export default function StoryViewer({userStory  , onClose} : Props) {
         )}
 
         {/* Tap zones */}
-          <View style={styles.tapZones}>
-          <TouchableOpacity style={styles.tapHalf} onPress={goPrev}/>
-          <TouchableOpacity style={styles.tapHalf} onPress={goNext}/>
-          </View>
+        <View style={styles.tapZones}>
+          <TouchableOpacity style={styles.tapHalf} onPress={goPrev} />
+          <TouchableOpacity style={styles.tapHalf} onPress={goNext} />
+        </View>
       </View>
     </Modal>
   );
 }
 
-function StoryVideoPlayer ({uri , style } : {uri : string , style : any}) {
-  const player = useVideoPlayer({uri} , (p) =>{
+function StoryVideoPlayer({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer({ uri }, (p) => {
     p.loop = false;
     p.play();
-  })
-  return <VideoView player={player} style={style}/>
+  });
+  return <VideoView player={player} style={style} />;
 }

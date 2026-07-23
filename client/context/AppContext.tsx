@@ -3,6 +3,10 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import axios from "axios"
 import { API_BASE_URL, WS_URL } from "@/constants/config";
 import { useAuth, useUser } from "@clerk/expo";
+import { useChat } from "@/hooks/useSendMessage";
+import { useMessageStore } from "@/store/messageStore";
+
+
 
 export const api = axios.create({baseURL:API_BASE_URL})
 
@@ -76,10 +80,12 @@ export function AppProvider({children } : {children : ReactNode}){
     } , [isSignedIn])
 
     // keep local AuthState in sync with Clerk profile state 
-    useEffect(() => {
+    useEffect( () => {
         if(!authLoaded || !userLoaded) return;
-        if(isSignedIn && clerkUser){
-            const mappedUser : User = {
+        if(isSignedIn){  
+            fetchCurrentUser();
+
+            /* const mappedUser : User = {
                 _id : clerkUser.id,
                 name: clerkUser.fullName || "Anonymous",
                 email: clerkUser.primaryEmailAddress?.emailAddress || "",
@@ -91,11 +97,29 @@ export function AppProvider({children } : {children : ReactNode}){
                 lastSeen: new Date().toISOString()
             }
            
-            setAuth({token: _tokenRef.current , user: mappedUser , loading:false})
+            setAuth({token: _tokenRef.current , user: mappedUser , loading:false})  */
+            
         }else {
             setAuth( {token: null , user: null , loading:false} )
         }
     } , [isSignedIn , authLoaded , userLoaded , clerkUser])
+
+    const fetchCurrentUser = async () => {
+  try {
+    const { data } = await api.get(
+      "/api/users/profile"
+    );
+    console.log('we getting user' , data);
+
+    setAuth({
+      token: _tokenRef.current,
+      user: data.user,
+      loading: false,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+};
 
     const logout = useCallback(async () => {
         _tokenRef.current = null;
@@ -141,21 +165,24 @@ export function AppProvider({children } : {children : ReactNode}){
         const connectWs = async () => {
             try {
                 const token = await getTokenRef.current();
+
                 if (!token || !isMounted) return;
 
                 ws = new WebSocket(`${WS_URL}/ws?token=${token}`)
                 wsRef.current = ws;
-
+                
                 ws.onmessage = (e) => {
                     const event : WsEvent = JSON.parse(e.data)
+                    console.log("sending : " , e.data)
                     if (event.type === "message") {
                         const incoming = event.payload as Message;
                         setMessages((prev) => {
+                            // console.log('sednding prev' , prev)
                             if(prev.length > 0 && prev[0].conversationId === incoming.conversationId) {
                                 return [...prev , incoming]
                             }
                             return prev;
-                        });
+                        });  
                         setConversations((prev) => {
                             const exists = prev.some( (c) => c._id === incoming.conversationId);
                             if (!exists) {

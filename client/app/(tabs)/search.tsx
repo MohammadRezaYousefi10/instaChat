@@ -10,12 +10,15 @@ import React, { useEffect, useState } from "react";
 import type { Conversation, User as IUser } from "../../types";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/assets/styles/SearchScreen.styles";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/constants/Colors";
 import { TextInput } from "react-native-gesture-handler";
 import Avatar from "@/components/Avatar";
 import { api, useApp } from "@/context/AppContext";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/SearchScreen.styles";
+import ContactsModal from "@/components/ContactsModal";
+import { useStartChat } from "@/services/useStartChat";
+import ContactsGate from "@/components/ContactsGate";
 
 export default function search() {
   const [search, setSearch] = useState("");
@@ -23,6 +26,14 @@ export default function search() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const {setConversations , setSelectedConversation} = useApp();
+  const {colors } = useTheme();
+  const styles = getStyles(colors);
+  const [showContacts, setShowContacts] = useState(false);
+  const { startChat, loadingChat } = useStartChat();
+
+  const handleuserchat = () => {
+    console.log('hello')
+  }
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -39,15 +50,18 @@ export default function search() {
       setTimeout(() => {
         fetchUsers;
       }, 1000);
+    }finally{
+      setLoading(false)
     }
   };
 
   useEffect(() => {
-    const timer = setTimeout(fetchUsers, 3000);
+    const timer = setTimeout(fetchUsers, 1000);
     return () => clearTimeout(timer);
   }, [search]);
 
-  const startChat = async (user: IUser) => {
+  /* const startChat = async (user: IUser) => {
+    setLoading(true)
     try {
       const { data } = await api.get<{
         success: boolean;
@@ -60,30 +74,41 @@ export default function search() {
           (prev.some((c) =>
             c._id === data.conversation._id) ? prev : [data.conversation, ...prev]));
         router.push(`/chat/${data.conversation._id}`);
-
+        setLoading(false)
       }
     } catch (err) {
       Alert.alert("Error" , "Failed to open conversation");
+    }finally{
+      setLoading(false)
     }
-  };
+  }; */
+
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       {/* header */}
       <View style={styles.header}>
         <Text style={styles.title}>Search</Text>
+      <View style={styles.headerRight}>
+
+        <TouchableOpacity onPress={() => setShowContacts(true)} >
+        <Ionicons name="add" size={24} color={colors.onSurface} />
+      </TouchableOpacity>
+      </View>
+
       </View>
 
       {/* search */}
       <View style={styles.searchRow}>
-        <Ionicons name="search" size={16} color={Colors.outlineVariant} />
+        <Ionicons name="search" size={16} color={colors.outlineVariant} />
         <TextInput
           style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
           placeholder="Search by name, email or handle..."
-          placeholderTextColor={Colors.outlineVariant}
+          placeholderTextColor={colors.outlineVariant}
           autoCapitalize="none"
+          keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
         />
         {search.length > 0 && (
           <TouchableOpacity
@@ -94,7 +119,7 @@ export default function search() {
             <Ionicons
               name="close-circle"
               size={16}
-              color={Colors.outlineVariant}
+              color={colors.outlineVariant}
             />
           </TouchableOpacity>
         )}
@@ -102,14 +127,17 @@ export default function search() {
 
       {/* Results */}
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
       ) : (
         <FlatList
           data={users}
           keyExtractor={(u) => u._id}
           contentContainerStyle={styles.list}
-          renderItem={({ item: u }) => (
-            <TouchableOpacity
+          renderItem={({ item:u }) => (
+         
+            
+             <TouchableOpacity
+              disabled={loading}
               style={styles.userRow}
               onPress={() => startChat(u)}
               activeOpacity={0.7}
@@ -129,7 +157,7 @@ export default function search() {
                   {u.email}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> 
           )}
           ListEmptyComponent={
             <Text style={styles.empty}>
@@ -138,6 +166,12 @@ export default function search() {
           }
         />
       )}
+       {/* <ContactsModal
+        visible={showContacts}
+        onClose={() => setShowContacts(false)}
+        onSelectUser={handleuserchat}
+      /> */}
+      <ContactsGate visible={showContacts} onClose={() => setShowContacts(false)} />
     </SafeAreaView>
   );
 }

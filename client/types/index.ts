@@ -3,13 +3,14 @@ export interface User {
     name: string;
     email: string;
     handle: string;
+    phone?: string;
     avatar?: string;
     bio?: string;
     isOnline: boolean;
     lastSeen: string;
 }
 
-export interface Message {
+/* export interface Message {
     _id: string;
     sender: string;
     receiver: string;
@@ -19,7 +20,34 @@ export interface Message {
     read: boolean;
     createdAt: string;
     conversationId: string;
+    status?: MessageStatus;
+    isTemp?: boolean;
+} */
+  export type MessageStatus =
+    | "queued"
+    | "sending"
+    | "sent"
+    | "delivered"
+    | "read"
+    | "failed";
+
+export interface Message {
+  _id: string;
+  sender: string;
+  receiver: string;
+  text?: string;
+  mediaUrl?: string;
+  mediaType?: "image" | "video";
+  read: boolean;
+  createdAt: string;
+  conversationId: string;
+  status?: MessageStatus;
+  isTemp?: boolean;
+  clientId?: string;
 }
+
+
+
 
 export interface Conversation {
     _id: string;
@@ -58,3 +86,21 @@ export interface WsEvent {
     conversationId?: string;
     [key: string]: any;
 }
+
+export interface RegisteredUser {
+  _id: string;
+  name: string;
+  handle: string;
+  avatar?: string;
+  phone: string;
+}
+
+export interface DeviceContact {
+  id: string;
+  name: string;
+  phone: string;
+  isNormalized: boolean;
+  registered?: RegisteredUser;
+}
+
+

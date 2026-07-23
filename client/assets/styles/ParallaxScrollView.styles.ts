@@ -1,8 +1,12 @@
 import { StyleSheet } from 'react-native';
+import { ColorPalette } from "../../constants/Colors";
 
 const HEADER_HEIGHT = 250;
 
-export const styles = StyleSheet.create({
+export const getStyles = (colors: ColorPalette) =>
+  StyleSheet.create({ 
+
+
     container: {
         flex: 1,
     },

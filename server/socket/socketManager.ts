@@ -11,7 +11,7 @@ const onlineUsers = new Map<string , WebSocket>()
 // Initialize socket server
 export function initSocketServer(server : any ) {
     const wss = new WebSocketServer({server , path: "/ws"})
-
+    
     wss.on("connection" , async (ws: WebSocket , req : IncomingMessage) => {
         console.log("Client connected");
 
@@ -34,15 +34,16 @@ export function initSocketServer(server : any ) {
             ws.close(1008 , "Invalid token");
             return;
         }
-
+        //console.log("Client connected" , userId);
         // Register user as online 
         onlineUsers.set(userId , ws);
         await User.findByIdAndUpdate(userId , {isOnline:true});
         // broadcast user is online
         broadcastOnlineStatus(userId , true)
 
-        ws.on("message" , (data: Buffer) => {
+        ws.on("message" , async (data: Buffer) => {
             try {
+                   //console.log("Client sending message");
                 const msg = JSON.parse(data.toString());
 
                 // Forward message to receiver(s)
@@ -77,6 +78,41 @@ export function initSocketServer(server : any ) {
                         }
                     }
                 }
+
+                // Update user's live location (only meaningful while visible on map)
+                if(msg.type === 'location'){
+                    const {latitude , longitude} = msg;
+
+                    if(
+                        typeof latitude !== "number" || typeof longitude !== "number" ||
+                        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180
+                    ){
+                        return;
+                    }
+
+                    const updatedUser = await User.findByIdAndUpdate(
+                        userId ,
+                        {
+                            location: {type:"Point" , coordinates:[longitude , latitude]},
+                            lastSeen: new Date(),
+                        },
+                        {new:true}
+                    );
+
+                    if(updatedUser?.isVisibleOnMap){
+                        broadcastMapUpdate(userId , {latitude , longitude});
+                    }
+                }
+
+                // Toggle visibility on the map
+                if(msg.type === 'map_visibility'){
+                    const {isVisibleOnMap} = msg;
+
+                    if(typeof isVisibleOnMap !== "boolean") return;
+
+                    await User.findByIdAndUpdate(userId , {isVisibleOnMap});
+                    broadcastMapUpdate(userId , null , isVisibleOnMap);
+                }
                 
             } catch (error:any) {
                 console.error("Error Processing message:" , error)
@@ -84,10 +120,13 @@ export function initSocketServer(server : any ) {
         })
 
         ws.on("close" , async () => {
+            console.log('user disconected from ws')
             onlineUsers.delete(userId);
-            await User.findByIdAndUpdate(userId ,{isOnline:false , lastSeen : new Date()} );
+            await User.findByIdAndUpdate(userId ,{isOnline:false , isVisibleOnMap:false , lastSeen : new Date()} );
             // broadcast user becomes offline
             broadcastOnlineStatus(userId , false)
+            // also remove from map for everyone currently viewing it
+            broadcastMapUpdate(userId , null , false)
         })
     })
 
@@ -126,6 +165,22 @@ export async function handleConversationEvent (senderId:string , conversationId:
 export function broadcastUserUpdate(user : any){
     const payload = JSON.stringify({type:"user_update" , user});
     onlineUsers.forEach((ws) => {
+        if(ws.readyState === WebSocket.OPEN){
+            ws.send(payload);
+        }
+    })
+}
+
+// Broadcast a nearby-map user's location or visibility change to everyone
+// currently connected (the client filters/uses this only while the Map screen is open)
+export function broadcastMapUpdate(
+    userId: string ,
+    location: {latitude:number , longitude:number} | null ,
+    isVisibleOnMap?: boolean
+){
+    const payload = JSON.stringify({type:"map_update" , userId , location , isVisibleOnMap});
+    onlineUsers.forEach((ws , id) => {
+        if(id === userId) return; // don't send back to the user who moved/toggled
         if(ws.readyState === WebSocket.OPEN){
             ws.send(payload);
         }

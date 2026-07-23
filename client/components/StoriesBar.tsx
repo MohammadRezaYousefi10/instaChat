@@ -1,18 +1,23 @@
 import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { styles } from '@/assets/styles/StoriesBar.styles'
+// import { styles } from '@/assets/styles/StoriesBar.styles'
 import { UserStory } from '@/types'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/Colors'
 import * as ImagePicker from 'expo-image-picker'
 import Avatar from './Avatar'
 import { api, useApp } from '@/context/AppContext'
+import { useTheme } from '@/context/ThemeContext'
+import { getStyles } from '@/assets/styles/StoriesBar.styles'
 
 interface StoriesBarProbs {
     onViewStoty : (us : UserStory) => void
 }
 
 export default function StoriesBar({onViewStoty} : StoriesBarProbs) {
+
+    const {colors } = useTheme()
+    const styles = getStyles(colors);
 
     const [uploading , setUploading] = useState(false);
     const {userStories , fetchStories} = useApp();

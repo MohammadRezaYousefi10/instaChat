@@ -2,13 +2,13 @@ import { View, Text, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacit
 import React, { useState } from 'react'
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { styles } from '@/assets/styles/AuthScreen.styles';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors } from '@/constants/Colors';
 import {SvgXml} from 'react-native-svg'
 import { TextInput } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth, useClerk, useSignIn, useSignUp } from '@clerk/expo';
+import { useTheme } from '@/context/ThemeContext';
+import { getStyles } from '@/assets/styles/AuthScreen.styles';
 
 
 type Mode = "login" | "register"
@@ -18,6 +18,10 @@ export default function AuthScreen() {
   const {signUp} = useSignUp() 
   const {setActive} = useClerk()
 
+
+  
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
 
   const [mode , setMode] = useState<Mode>("login");
@@ -33,16 +37,20 @@ export default function AuthScreen() {
   const router = useRouter();
 
   const handleSubmit = async () => {
-
+    
 
     if (!email.trim() || !password.trim())
+      
       return Alert.alert("Validation", "please fill all fields");
+
     if (mode === "register" && (!name.trim() || !handle.trim()))
       return Alert.alert("Validation", "please fill all fields");
 
     setLoading(true)
     try {
+     
       if(mode === 'login' ) {
+         
         if(!signIn) return;
 
 
@@ -50,24 +58,25 @@ export default function AuthScreen() {
           identifier: email ,
           password,
         })
-
+   
         if (result.error) {
           throw result.error  
         }
 
         if (signIn.status === 'complete') {
-          await setActive({session: signIn.createdSessionId})
+          await setActive({session: signIn.createdSessionId})  
           router.replace('/(tabs)')
         }else if(signIn.status === 'needs_first_factor'  && signIn.emailCode){
           await signIn.emailCode.sendCode();
           setVerifyingMode("login")
           setVerifying(true)
-        }else if(signIn.status === 'needs_second_factor' && signIn.mfa){
+        }else if(signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust' && signIn.mfa){
           await signIn.mfa.sendEmailCode();
           setVerifyingMode("login-mfa")
           setVerifying(true)
       }
       }else {
+        console.log('here ?')
         if (!signUp) return;
         const spaceIdx = name.trim().indexOf(" ");
         const firstName = spaceIdx !== -1 ? name.trim().substring(0 , spaceIdx) : name.trim();
@@ -170,7 +179,7 @@ if (verifying) {
           {/* Logo */}
           <View style={styles.logoRow}>
             <LinearGradient
-              colors={[Colors.primary, Colors.primaryContainer]}
+              colors={[colors.primary, colors.primaryContainer]}
               style={styles.logoBox}
             >
               <SvgXml xml={svgMarkup} width="50%" height="50%" />
@@ -196,9 +205,10 @@ if (verifying) {
               value={verificationCode}
               onChangeText={setVerifactionCode}
               placeholder="Enter 6-digit code"
-              placeholderTextColor={Colors.outlineVariant}
+              placeholderTextColor={colors.outlineVariant}
               keyboardType="number-pad"
               autoCapitalize="none"
+              keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
             />
           </View>
 
@@ -216,17 +226,17 @@ if (verifying) {
           {/* Submit */}
           <TouchableOpacity onPress={handleVerify} 
           disabled={loading} activeOpacity={0.88} style={styles.btnWrapper}>
-                <LinearGradient colors={[Colors.primary , Colors.primaryContainer]} start={{x:0 , y: 0}}
+                <LinearGradient colors={[colors.primary , colors.primaryContainer]} start={{x:0 , y: 0}}
               end={{x:1 , y:1}} style={styles.btn}>
                 {loading ? (
-                  <ActivityIndicator color={Colors.onPrimary} size="small"/>
+                  <ActivityIndicator color={colors.onPrimary} size="small"/>
                 ) : (
                   <>
                   <Text>
                    Verify Code
 
                   </Text>
-                  <Ionicons  name='arrow-forward' size={18} color={Colors.onPrimary}/>
+                  <Ionicons  name='arrow-forward' size={18} color={colors.onPrimary}/>
                   </>
                 )}
                 </LinearGradient>
@@ -251,7 +261,7 @@ if (verifying) {
           {/* Logo */}
           <View style={styles.logoRow}>
             <LinearGradient
-              colors={[Colors.primary, Colors.primaryContainer]}
+              colors={[colors.primary, colors.primaryContainer]}
               style={styles.logoBox}
             >
               <SvgXml xml={svgMarkup} width="50%" height="50%" />
@@ -279,8 +289,9 @@ if (verifying) {
                     value={name}
                     onChangeText={setName}
                     placeholder="Your name"
-                    placeholderTextColor={Colors.outlineVariant}
+                    placeholderTextColor={colors.outlineVariant}
                     autoCapitalize="words"
+                    keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
                   />
                 </View>
                 <View style={styles.field}>
@@ -294,8 +305,9 @@ if (verifying) {
                         setHandle(v.toLocaleLowerCase().replace(/\s/g, ""))
                       }
                       placeholder="username"
-                      placeholderTextColor={Colors.outlineVariant}
+                      placeholderTextColor={colors.outlineVariant}
                       autoCapitalize="none"
+                      keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
                     />
                   </View>
                 </View>
@@ -310,9 +322,10 @@ if (verifying) {
               value={email}
               onChangeText={setEmail}
               placeholder="You@example.com"
-              placeholderTextColor={Colors.outlineVariant}
+              placeholderTextColor={colors.outlineVariant}
               keyboardType="email-address"
               autoCapitalize="none"
+              keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
             />
           </View>
 
@@ -323,8 +336,9 @@ if (verifying) {
               value={password}
               onChangeText={setPassword}
               placeholder="********"
-              placeholderTextColor={Colors.outlineVariant}
+              placeholderTextColor={colors.outlineVariant}
               secureTextEntry
+              keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
             />
           </View>
 
@@ -346,17 +360,17 @@ if (verifying) {
 
           {/* Submit */}
           <TouchableOpacity onPress={handleSubmit} disabled={loading} activeOpacity={0.88} style={styles.btnWrapper}>
-                <LinearGradient colors={[Colors.primary , Colors.primaryContainer]} start={{x:0 , y: 0}}
+                <LinearGradient colors={[colors.primary , colors.primaryContainer]} start={{x:0 , y: 0}}
               end={{x:1 , y:1}} style={styles.btn}>
                 {loading ? (
-                  <ActivityIndicator color={Colors.onPrimary} size="small"/>
+                  <ActivityIndicator color={colors.onPrimary} size="small"/>
                 ) : (
                   <>
                   <Text>
                    {mode === "login" ? "Sign In" : "Create Account"}
 
                   </Text>
-                  <Ionicons  name='arrow-forward' size={18} color={Colors.onPrimary}/>
+                  <Ionicons  name='arrow-forward' size={18} color={colors.onPrimary}/>
                   </>
                 )}
                 </LinearGradient>
