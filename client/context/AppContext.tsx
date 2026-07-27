@@ -5,6 +5,9 @@ import { API_BASE_URL, WS_URL } from "@/constants/config";
 import { useAuth, useUser } from "@clerk/expo";
 import { useChat } from "@/hooks/useSendMessage";
 import { useMessageStore } from "@/store/messageStore";
+import { useConversationStore } from "@/store/conversationStore";
+import { conversationService } from "@/services/chats/conversation.service";
+import { usePresenceStore } from "@/store/presenceStore";
 
 
 
@@ -23,12 +26,15 @@ interface AppContextType {
     setUserStories : React.Dispatch<React.SetStateAction<UserStory[]>>
 
     conversations: Conversation[]
-    setConversations : React.Dispatch<React.SetStateAction<Conversation[]>>
-    selectedConversation: Conversation | null;
-    setSelectedConversation: (c: Conversation | null) => void
+    //setConversations : React.Dispatch<React.SetStateAction<Conversation[]>>
+    setConversations: (items: Conversation[]) => void;
+    //selectedConversation: Conversation | null;
+    //setSelectedConversation: (c: Conversation | null) => void
 
-    messages: Message[];
-    setMessages : React.Dispatch<React.SetStateAction<Message[]>>
+    setSelectedConversation: (conversation: Conversation | null) => void;
+
+    //messages: Message[];
+    //setMessages : React.Dispatch<React.SetStateAction<Message[]>>
 
     fetchStories: () => Promise<void>;
     typingUsers: Record<string , boolean>;
@@ -46,9 +52,23 @@ export function AppProvider({children } : {children : ReactNode}){
     const {getToken , isLoaded : authLoaded, isSignedIn , signOut} = useAuth();
     const {user : clerkUser , isLoaded: userLoaded} = useUser();
 
-    const [conversations , setConversations] = useState<Conversation[]>([])
-    const [selectedConversation , setSelectedConversation] = useState<Conversation | null>(null)
-    const [messages , setMessages] = useState<Message[]>([])
+    //const [conversations , setConversations] = useState<Conversation[]>([])
+    const conversations = useConversationStore(state => state.conversations);
+
+    const setConversations = useConversationStore(state => state.setConversations);
+  
+
+    const selectedConversation = useConversationStore(state => state.selectedConversation);
+
+    const setSelectedConversation = useConversationStore(state => state.setSelectedConversation);
+
+     const { setMessages  , addMessage, getConversationMessages , clearConversation} = useMessageStore();
+    
+    //const [selectedConversation , setSelectedConversation] = useState<Conversation | null>(null)
+    const store = useConversationStore.getState();
+    const conversationStore = useConversationStore.getState();
+
+    //const [messages , setMessages] = useState<Message[]>([])
     const [userStories , setUserStories] = useState<UserStory[]>([])
     const [typingUsers , setTypingUsers] = useState<Record<string , boolean>>({})
     const wsRef = useRef<WebSocket | null>(null)
@@ -127,7 +147,8 @@ export function AppProvider({children } : {children : ReactNode}){
         await signOut();
         setAuth( {token: null , user: null , loading:false} )
         setConversations([]);
-        setMessages([])
+        //setMessages([])
+        clearConversation(selectedConversation!._id)
         setSelectedConversation(null)
     } , [signOut])
 
@@ -170,20 +191,24 @@ export function AppProvider({children } : {children : ReactNode}){
 
                 ws = new WebSocket(`${WS_URL}/ws?token=${token}`)
                 wsRef.current = ws;
-                
-                ws.onmessage = (e) => {
+
+                ws.onmessage = async (e) => {
                     const event : WsEvent = JSON.parse(e.data)
                     console.log("sending : " , e.data)
                     if (event.type === "message") {
                         const incoming = event.payload as Message;
-                        setMessages((prev) => {
-                            // console.log('sednding prev' , prev)
+                        addMessage(incoming.conversationId , incoming)
+                        /* setMessages((prev) => {
                             if(prev.length > 0 && prev[0].conversationId === incoming.conversationId) {
                                 return [...prev , incoming]
                             }
                             return prev;
-                        });  
-                        setConversations((prev) => {
+                        });   */
+                        //console.log("seting message : " , incoming.conversationId )
+                        //console.log("seting message : " , event.payload )
+                        //setMessages(incoming.conversationId, event.payload);
+                        //addMessage(incoming.conversationId, event.payload);
+                        /* setConversations((prev) => {
                             const exists = prev.some( (c) => c._id === incoming.conversationId);
                             if (!exists) {
                                 api.get("/api/messages/conversations").then(({data})=>{
@@ -196,7 +221,22 @@ export function AppProvider({children } : {children : ReactNode}){
                             return prev.map((c)=> c._id === incoming.conversationId
                              ? {...c , lastMessage:incoming , updatedAt : incoming.createdAt} : c)
                              .sort((a,b) => new Date(b.updatedAt).getTime() - new Date(b.updatedAt).getTime())
-                        })
+                        }) */
+
+                    /*  const exists = conversationStore.conversations.some(
+                            c => c._id === incoming.conversationId
+                        );
+                    if (!exists) {
+                        console.log('get converastion with service')
+                            await conversationService.fetch();
+                    } else { */
+                        console.log('updating converastion with store')
+                        conversationStore.updateLastMessage(
+                            incoming.conversationId,
+                            incoming
+                        );
+                       /*  addMessage(incoming.conversationId , incoming) */
+                   
                     }
                     if(event.type === "typing"){
                         const {senderId , isTyping} = event;
@@ -210,29 +250,35 @@ export function AppProvider({children } : {children : ReactNode}){
                         const {userId , isOnline } = event;
                         if(userId && isOnline !== undefined) {
                             setUsers((prev) => prev.map((u)=>(u._id === userId ? {...u  , isOnline} : u)));
-                            setConversations((prev) =>  prev.map((c) => {
+                            /* setConversations((prev) =>  prev.map((c) => {
                                 if(c.participant?._id === userId) {
                                     return {...c , participant: {...c.participant , isOnline }}
                                 }
                                 return c;
-                            }))
+                            })) */
+                           store.updateParticipantStatus(
+                                userId,
+                                isOnline
+                            );
                         } 
                     }
                     if(event.type === "user_update"){
                         const updated = event.user as User;
                         if(updated){
                             setUsers((prev) => prev.map((u) =>(u._id === updated._id ? updated : u)))
-                            setConversations((prev) => 
+                            /* setConversations((prev) => 
                                 prev.map((c) => (c.participant?._id === updated._id ? {...c ,
                                     participant : updated
                                 } : c))
-                            );
-                            setSelectedConversation((prev) =>  {
+                            ); */
+                            store.updateParticipant(updated);
+                            store.updateSelectedParticipant(updated);
+                            /* setSelectedConversation((prev) =>  {
                                 if(prev && prev.participant?._id === updated._id){
                                     return {...prev , participant: updated }
                                 }
                                 return prev;
-                            })
+                            }) */
                             setUserStories((prev) => prev.map((us)=> us.user._id === updated._id ? 
                             {...us , user: updated} : us))
                         }
@@ -240,10 +286,13 @@ export function AppProvider({children } : {children : ReactNode}){
                      if(event.type === "chat_deleted"){
                         const {conversationId} = event;
                         if(conversationId){
-                            setConversations((prev) =>prev.filter((c)=> c._id !== conversationId));
-                            setSelectedConversation((prev) => (prev?._id === conversationId ? null : prev))
+                            /* setConversations((prev) =>prev.filter((c)=> c._id !== conversationId)); */
+                            store.removeConversation(conversationId);
+                            /* setSelectedConversation((prev) => (prev?._id === conversationId ? null : prev)) */
+                            store.clearSelectedConversation(conversationId);
                         }
                      }
+                    
                 }
                 ws.onerror = () => ws?.close()
             } catch (err) {
@@ -267,10 +316,10 @@ export function AppProvider({children } : {children : ReactNode}){
         setUsers,
         conversations,
         setConversations,
-        selectedConversation,
+        //selectedConversation,
         setSelectedConversation,
-        messages,
-        setMessages,
+        //messages,
+        //setMessages,
         userStories,
         setUserStories,
         fetchStories,

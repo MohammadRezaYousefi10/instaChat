@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Conversation } from '@/types'
 // import { styles } from '@/assets/styles/ConvoItem.styles';
 import Avatar from './Avatar';
@@ -10,25 +10,29 @@ import { getStyles } from '@/assets/styles/ConvoItem.styles';
 interface ConvoItemProbs {
     convo : Conversation ,
     selected : boolean ,
-    onPress : () => void
+    onPress : () => void ,
 }
 
-export default function ConvoItem({convo , selected , onPress} : ConvoItemProbs) {
+export default function ConvoItem({convo , selected , onPress } : ConvoItemProbs) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
+
 
   const name = convo.participant?.name || "User";
   const avatar = convo.participant?.avatar;
   const online = convo.participant?.isOnline;
   const sub = `@${convo.participant?.handle}`;
 
-  const lastMsg =
+    const lastMsg =
     convo.lastMessage?.text ||
     (convo.lastMessage?.mediaType === "image"
       ? "📷 photo"
       : convo.lastMessage?.mediaUrl
         ? "🎥 video"
         : "Start a Conversation");
+
+  
+
   return (
     
     <TouchableOpacity

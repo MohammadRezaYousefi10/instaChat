@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Conversation, UserStory } from "@/types";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +13,7 @@ import ConvoItem from "@/components/ConvoItem";
 import { api, useApp } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/MessagesScreen.styles";
+import { conversationService } from "@/services/chats/conversation.service";
 
 export default function MessageScreen() {
      
@@ -21,21 +22,31 @@ export default function MessageScreen() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
-  const {setSelectedConversation , conversations , setConversations , selectedConversation }= useApp();
+  const {setSelectedConversation , conversations , setConversations }= useApp();
+
+
 
   const router = useRouter();
 
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
-  const fetchConversation = () => {
+  const fetchConversation = async () => {
     setLoading(true);
-    api.get<{success :boolean; conversations:Conversation[]}>("/api/messages/conversations").then(({data}) => {
+    try {
+      await conversationService.fetch();
+      setLoading(false)
+    } catch (error) {
+       setTimeout(fetchConversation , 1000);
+    } finally{
+       setLoading(false)
+    }
+    /* api.get<{success :boolean; conversations:Conversation[]}>("/api/messages/conversations").then(({data}) => {
       if(data.success) setConversations(data.conversations)
         setLoading(false)
     }).catch(()=>{
       setTimeout(fetchConversation , 1000);
-    })
+    }) */
   };
 
   useEffect(() => {

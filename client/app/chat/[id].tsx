@@ -28,11 +28,14 @@ import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/ChatScreen.styles";
 
 import { Audio } from "expo-av";
-import { sendMessage } from "@/services/chat";
+//import { sendMessage } from "@/services/chat";
 import { useChat } from "@/hooks/useSendMessage";
 //import { useSendMessage } from "@/hooks/useSendMessage";
 import * as Crypto from 'expo-crypto';
 import { useMessageStore } from "@/store/messageStore";
+import { useConversationStore } from "@/store/conversationStore";
+import { conversationService } from "@/services/chats/conversation.service";
+import { usePresence } from "@/hooks/usePresence";
 
 
 export default function chatScreen() {
@@ -43,7 +46,7 @@ export default function chatScreen() {
     auth,
     //messages,
     users,
-    selectedConversation,
+    //selectedConversation,
     setSelectedConversation,
     typingUsers,
     setConversations,
@@ -51,8 +54,17 @@ export default function chatScreen() {
     sendWsEvent,
   } = useApp();
   const user = auth.user;
+
+  const selectedConversation = useConversationStore(state => state.selectedConversation);
+  //const setSelectedConversation = useConversationStore(state => state.setSelectedConversation);
+
+
+  const conversationStore = useConversationStore.getState();
+
   const { messages , send } = useChat(selectedConversation!._id);
-  const { setMessages  , getConversationMessages} = useMessageStore();
+  const { setMessages , addMessage , getConversationMessages} = useMessageStore();
+
+
   
 
   const {colors } = useTheme()
@@ -72,12 +84,16 @@ export default function chatScreen() {
 
   const partner = selectedConversation?.participant;
 
+  if(!partner) return;
+
+  //const presence = usePresence(partner._id);
+
   // Load messages for this conversation
   useEffect(() => {
     // setMessages(id , messages)
     
     console.log('hello' , id)
-    if(!id) return;
+    if(!id) return router.back();
     setLoading(true);
     const fetchMessages = () => {
       // setMessages(id , messages)
@@ -114,12 +130,15 @@ export default function chatScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            const { data } = await api.delete(`/api/messages/conversations/${selectedConversation?._id}`);
-            if (data.success) {
-              setConversations((prev) => prev.filter((c) => c._id !== selectedConversation?._id));
-              setSelectedConversation(null);
-              router.back();
-            }
+            //const { data } = await api.delete(`/api/messages/conversations/${selectedConversation?._id}`);
+            router.back();
+            await conversationService.deleteConversation(selectedConversation!._id);
+            /* if (data.success) {
+              //setConversations((prev) => prev.filter((c) => c._id !== selectedConversation?._id));
+              conversationStore.removeConversation(selectedConversation!._id);
+              } */
+            //setSelectedConversation(null);
+           
           } catch (error) {
             Alert.alert("Error", "Failed to delete chat");
           }
@@ -173,6 +192,10 @@ if (message) {
   }); */
   const target = {receiverId : partner!._id}
   sendWsEvent({type:"message" , ...target , payload: message});
+  
+  //setMessages(selectedConversation._id, messages);
+  //addMessage(selectedConversation._id, message);
+  conversationStore.updateLastMessage(selectedConversation._id , message);
 
   setText("");
   setMediaUri(null);
@@ -485,7 +508,13 @@ useEffect(() => {
               );
             })}
           </View>
-        )}
+        )} 
+        
+       {/* <Text>
+    {presence.online
+        ? "Online"
+        : "Offline"}
+</Text>  */}
 
         {/* input bar */}
         <View style={styles.inputBar}>

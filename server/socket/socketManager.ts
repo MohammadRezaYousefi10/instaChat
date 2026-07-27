@@ -113,6 +113,7 @@ export function initSocketServer(server : any ) {
                     await User.findByIdAndUpdate(userId , {isVisibleOnMap});
                     broadcastMapUpdate(userId , null , isVisibleOnMap);
                 }
+
                 
             } catch (error:any) {
                 console.error("Error Processing message:" , error)
