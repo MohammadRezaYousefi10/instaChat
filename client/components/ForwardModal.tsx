@@ -32,7 +32,9 @@ import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import AppBottomSheet from "./AppBottomSheet";
 import { toast } from "./Toast";
 import { LinearGradient } from "expo-linear-gradient";
-import { sendMessage } from "@/services/chat";
+import { sendMessage } from "@/services/chats/sendMessage";
+import * as Crypto from 'expo-crypto';
+
 
 const { width } = Dimensions.get("window");
 const NUM_COLUMNS = 4;
@@ -163,12 +165,16 @@ export default function ForwardModal({ visible, imageUri, onClose }: Props) {
           }>("/api/messages/send", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           }); */
+          const clientId = Crypto.randomUUID();
+          
           const data = await sendMessage({
-                      receiverId: conv._id,
+                      //receiverId: conv._id,
+                      conversationId: conv._id,
                       text,
                       mediaUri : imageUri,
                       mediaMime : "image/jpeg",
                       mediaName : "shared.jpg",
+                      clientId
               });
           if (!data.success) return;   
           

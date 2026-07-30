@@ -1,3 +1,6 @@
+import { Message } from "@/types";
+import { SendParams } from "./chat.service";
+
 class OutboxService {
 
     private queue: (() => Promise<void>)[] = [];

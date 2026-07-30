@@ -23,6 +23,8 @@ export default function ConvoItem({convo , selected , onPress } : ConvoItemProbs
   const online = convo.participant?.isOnline;
   const sub = `@${convo.participant?.handle}`;
 
+  //console.log('convo online ' , online)
+
     const lastMsg =
     convo.lastMessage?.text ||
     (convo.lastMessage?.mediaType === "image"

@@ -2,10 +2,10 @@ import { createTempMessage } from "@/utils/createTempMessage";
 import { useMessageStore } from "@/store/messageStore";
 import { sendMessage } from "./sendMessage";
 import * as Crypto from 'expo-crypto';
-import { outboxService } from "./outbox.service";
 import { Message } from "@/types";
+import { outboxService } from "./outbox.service";
 
-interface SendParams {
+export interface SendParams {
   senderId: string;
   receiverId: string;
   conversationId: string;
@@ -41,9 +41,8 @@ class ChatService {
     
     try {
       
- 
-
       const result = await sendMessage(params);
+        
    
     
       store.replaceTempMessage(
@@ -54,8 +53,9 @@ class ChatService {
           status: "sent",
         }
       );
-
+ 
       return result.message;
+      
     } catch (error) {
       store.updateStatus(
         params.conversationId,

@@ -20,7 +20,7 @@
     "express": "^5.2.1",
     "geoip-lite": "^2.0.3",
     "libphonenumber-js": "^1.13.9",
-    "mongoose": "^9.7.2",
+    "mongoose": "^9.8.0",
     "multer": "^2.2.0",
     "ws": "^8.21.0"
   },

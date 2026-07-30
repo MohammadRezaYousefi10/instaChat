@@ -1,9 +1,8 @@
 import { useCallback } from "react";
 import { useMessageStore } from "@/store/messageStore";
 import { chatService } from "@/services/chats/chat.service";
-import { Message } from "@/types";
+import { EMPTY_MESSAGES } from "@/constants/store";
 
-const EMPTY_MESSAGES: Message[] = [];
 
 export function useChat(conversationId: string) {
   const messages = useMessageStore(

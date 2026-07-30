@@ -7,7 +7,11 @@ import { useChat } from "@/hooks/useSendMessage";
 import { useMessageStore } from "@/store/messageStore";
 import { useConversationStore } from "@/store/conversationStore";
 import { conversationService } from "@/services/chats/conversation.service";
-import { usePresenceStore } from "@/store/presenceStore";
+import { usePresenceStore, UserPresence } from "@/store/presenceStore";
+import { useTypingStore } from "@/store/typingStore";
+import { SocketEvent } from "@/services/socket/socket.types";
+import { SocketEventType } from "@/services/socket/socket.events";
+import { SocketProvider } from "@/providers/SocketProvider";
 
 
 
@@ -37,8 +41,8 @@ interface AppContextType {
     //setMessages : React.Dispatch<React.SetStateAction<Message[]>>
 
     fetchStories: () => Promise<void>;
-    typingUsers: Record<string , boolean>;
-    sendWsEvent: (data : object) => void;
+    //typingUsers: Record<string , boolean>;
+    //sendWsEvent: (data : object) => void;
 }   
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -70,8 +74,8 @@ export function AppProvider({children } : {children : ReactNode}){
 
     //const [messages , setMessages] = useState<Message[]>([])
     const [userStories , setUserStories] = useState<UserStory[]>([])
-    const [typingUsers , setTypingUsers] = useState<Record<string , boolean>>({})
-    const wsRef = useRef<WebSocket | null>(null)
+    //const [typingUsers , setTypingUsers] = useState<Record<string , boolean>>({})
+    //const wsRef = useRef<WebSocket | null>(null)
 
     const getTokenRef = useRef(getToken)
     useEffect(() => {
@@ -103,6 +107,7 @@ export function AppProvider({children } : {children : ReactNode}){
     useEffect( () => {
         if(!authLoaded || !userLoaded) return;
         if(isSignedIn){  
+            
             fetchCurrentUser();
 
             /* const mappedUser : User = {
@@ -125,11 +130,12 @@ export function AppProvider({children } : {children : ReactNode}){
     } , [isSignedIn , authLoaded , userLoaded , clerkUser])
 
     const fetchCurrentUser = async () => {
+        //console.log('hello')
   try {
     const { data } = await api.get(
       "/api/users/profile"
     );
-    console.log('we getting user' , data);
+    //console.log('we getting user' , data);
 
     setAuth({
       token: _tokenRef.current,
@@ -143,7 +149,7 @@ export function AppProvider({children } : {children : ReactNode}){
 
     const logout = useCallback(async () => {
         _tokenRef.current = null;
-        wsRef.current?.close();
+        //wsRef.current?.close();
         await signOut();
         setAuth( {token: null , user: null , loading:false} )
         setConversations([]);
@@ -168,144 +174,14 @@ export function AppProvider({children } : {children : ReactNode}){
         }
     } , [])
 
-    const sendWsEvent = useCallback( (data:object) => {
+    /* const sendWsEvent = useCallback( (data:object) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify(data))
         }
-    } , [])
+    } , []) */
 
     // websocket lifecycle secured with dynamic Clerk token
-    useEffect(() => {
-        if(!isSignedIn || !authLoaded || !userLoaded) {
-            wsRef.current?.close();
-            return
-        }
-        let isMounted = true;
-        let ws: WebSocket | null = null;
-
-        const connectWs = async () => {
-            try {
-                const token = await getTokenRef.current();
-
-                if (!token || !isMounted) return;
-
-                ws = new WebSocket(`${WS_URL}/ws?token=${token}`)
-                wsRef.current = ws;
-
-                ws.onmessage = async (e) => {
-                    const event : WsEvent = JSON.parse(e.data)
-                    console.log("sending : " , e.data)
-                    if (event.type === "message") {
-                        const incoming = event.payload as Message;
-                        addMessage(incoming.conversationId , incoming)
-                        /* setMessages((prev) => {
-                            if(prev.length > 0 && prev[0].conversationId === incoming.conversationId) {
-                                return [...prev , incoming]
-                            }
-                            return prev;
-                        });   */
-                        //console.log("seting message : " , incoming.conversationId )
-                        //console.log("seting message : " , event.payload )
-                        //setMessages(incoming.conversationId, event.payload);
-                        //addMessage(incoming.conversationId, event.payload);
-                        /* setConversations((prev) => {
-                            const exists = prev.some( (c) => c._id === incoming.conversationId);
-                            if (!exists) {
-                                api.get("/api/messages/conversations").then(({data})=>{
-                                    if(data.success){
-                                        setConversations(data.setConversations)
-                                    }
-                                }).catch(console.error);
-                                return prev;
-                            }
-                            return prev.map((c)=> c._id === incoming.conversationId
-                             ? {...c , lastMessage:incoming , updatedAt : incoming.createdAt} : c)
-                             .sort((a,b) => new Date(b.updatedAt).getTime() - new Date(b.updatedAt).getTime())
-                        }) */
-
-                    /*  const exists = conversationStore.conversations.some(
-                            c => c._id === incoming.conversationId
-                        );
-                    if (!exists) {
-                        console.log('get converastion with service')
-                            await conversationService.fetch();
-                    } else { */
-                        console.log('updating converastion with store')
-                        conversationStore.updateLastMessage(
-                            incoming.conversationId,
-                            incoming
-                        );
-                       /*  addMessage(incoming.conversationId , incoming) */
-                   
-                    }
-                    if(event.type === "typing"){
-                        const {senderId , isTyping} = event;
-                        if(senderId && isTyping !== undefined){
-                            setTypingUsers((prev) => ({
-                                ...prev , [senderId] : isTyping
-                            }))
-                        }
-                    }
-                    if(event.type === "online_status"){
-                        const {userId , isOnline } = event;
-                        if(userId && isOnline !== undefined) {
-                            setUsers((prev) => prev.map((u)=>(u._id === userId ? {...u  , isOnline} : u)));
-                            /* setConversations((prev) =>  prev.map((c) => {
-                                if(c.participant?._id === userId) {
-                                    return {...c , participant: {...c.participant , isOnline }}
-                                }
-                                return c;
-                            })) */
-                           store.updateParticipantStatus(
-                                userId,
-                                isOnline
-                            );
-                        } 
-                    }
-                    if(event.type === "user_update"){
-                        const updated = event.user as User;
-                        if(updated){
-                            setUsers((prev) => prev.map((u) =>(u._id === updated._id ? updated : u)))
-                            /* setConversations((prev) => 
-                                prev.map((c) => (c.participant?._id === updated._id ? {...c ,
-                                    participant : updated
-                                } : c))
-                            ); */
-                            store.updateParticipant(updated);
-                            store.updateSelectedParticipant(updated);
-                            /* setSelectedConversation((prev) =>  {
-                                if(prev && prev.participant?._id === updated._id){
-                                    return {...prev , participant: updated }
-                                }
-                                return prev;
-                            }) */
-                            setUserStories((prev) => prev.map((us)=> us.user._id === updated._id ? 
-                            {...us , user: updated} : us))
-                        }
-                    }
-                     if(event.type === "chat_deleted"){
-                        const {conversationId} = event;
-                        if(conversationId){
-                            /* setConversations((prev) =>prev.filter((c)=> c._id !== conversationId)); */
-                            store.removeConversation(conversationId);
-                            /* setSelectedConversation((prev) => (prev?._id === conversationId ? null : prev)) */
-                            store.clearSelectedConversation(conversationId);
-                        }
-                     }
-                    
-                }
-                ws.onerror = () => ws?.close()
-            } catch (err) {
-                console.error("WS conncet error:" , err)
-            }
-        }
-
-        connectWs()
-        return () => {
-            isMounted = false;
-            ws?.close()
-        }
-    }, [isSignedIn , authLoaded , userLoaded])
+   
 
     return ( <AppContext.Provider 
     value={{
@@ -323,10 +199,12 @@ export function AppProvider({children } : {children : ReactNode}){
         userStories,
         setUserStories,
         fetchStories,
-        typingUsers,
-        sendWsEvent
+        //typingUsers,
+        //sendWsEvent
         }}> 
+         <SocketProvider wsUrl={WS_URL}> 
             {children}
+     </SocketProvider> 
         </AppContext.Provider>
     )
 
@@ -336,4 +214,4 @@ export function useApp () {
     const ctx = useContext(AppContext);
     if (!ctx) throw new Error("useApp must be used inside AppProvider")
         return ctx;
-}
+}  

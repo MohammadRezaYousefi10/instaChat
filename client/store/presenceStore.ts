@@ -7,7 +7,6 @@ export interface UserPresence {
     lastSeen?: string;
 
 }
-
 interface PresenceStore {
 
     presence: Record<string, UserPresence>;
@@ -40,6 +39,8 @@ create<PresenceStore>((set)=>({
     presence:{},
 
     setOnline:(userId)=>
+
+        
 
         set(state=>({
 

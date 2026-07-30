@@ -16,6 +16,8 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import SettingsModal from "@/components/SettingsModal";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import ToastHost from "@/components/Toast";
+import { SocketProvider } from "@/providers/SocketProvider";
+import { WS_URL } from "@/constants/config";
 
 
 
@@ -95,7 +97,7 @@ export default function RootLayout() {
       <ClerkLoaded>
         <GestureHandlerRootView style={{ flex: 1 }}>
             <BottomSheetModalProvider>
-          <AppProvider>
+          <AppProvider>            
             <AuthGuard />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />

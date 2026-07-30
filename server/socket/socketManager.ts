@@ -3,6 +3,7 @@ import { IncomingMessage } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
+import { SocketEventType } from "../types/socket.events.js";
 
 
 // Map userId -> WebSocket
@@ -47,40 +48,45 @@ export function initSocketServer(server : any ) {
                 const msg = JSON.parse(data.toString());
 
                 // Forward message to receiver(s)
-                if(msg.type === 'message'){
+                if(msg.type === SocketEventType.MESSAGE){
                     const {receiverId , conversationId , payload} = msg;
+                    console.log('message received ' , msg)
                     if(conversationId){
                         // Direct message with conversationId
-                        handleConversationEvent(userId , conversationId , {type:"message" , payload})
+                        handleConversationEvent(userId , conversationId , {type:SocketEventType.MESSAGE , payload})
 
                     }else if(receiverId) {
                         // Legacy direct message
                         const receiverWs = onlineUsers.get(receiverId);
                         if(receiverWs?.readyState === WebSocket.OPEN){
-                            receiverWs.send(JSON.stringify({type:"message" , payload}))
+                            receiverWs.send(JSON.stringify({type:SocketEventType.MESSAGE , payload}))
                         }
                     }
                 }
+                
 
                 // Forward typing indicator
-                 if(msg.type === 'typing'){
+                 if(msg.type === SocketEventType.TYPING){
                     const {receiverId , conversationId , isTyping} = msg;
+                    //console.log('getting msg' , msg)
                     if(conversationId){
                         // Update typing status in conversation
-                        handleConversationEvent(userId , conversationId , {type:"typing" , senderId : userId , 
+                        handleConversationEvent(userId , conversationId , {type:SocketEventType.TYPING , senderId : userId , 
                             isTyping
                         })
+                        //broadcastOnlineStatus(userId , true)
                     }else if(receiverId) {
                         // Legacy direct message
                         const receiverWs = onlineUsers.get(receiverId);
                         if(receiverWs?.readyState === WebSocket.OPEN){
-                            receiverWs.send(JSON.stringify({type:"typing" , senderId : userId , isTyping}))
+                            receiverWs.send(JSON.stringify({type:SocketEventType.TYPING , senderId : userId ,conversationId , isTyping}))
+                            //broadcastOnlineStatus(userId , true)
                         }
                     }
                 }
 
                 // Update user's live location (only meaningful while visible on map)
-                if(msg.type === 'location'){
+                if(msg.type === SocketEventType.LOCATION){
                     const {latitude , longitude} = msg;
 
                     if(
@@ -105,7 +111,7 @@ export function initSocketServer(server : any ) {
                 }
 
                 // Toggle visibility on the map
-                if(msg.type === 'map_visibility'){
+                if(msg.type === SocketEventType.MAP_VISIBILITY){
                     const {isVisibleOnMap} = msg;
 
                     if(typeof isVisibleOnMap !== "boolean") return;
@@ -134,8 +140,9 @@ export function initSocketServer(server : any ) {
     return wss;
 }
 
-function broadcastOnlineStatus(userId:string , isOnline: Boolean){
-    const payload = JSON.stringify({type:"online_status" , userId , isOnline});
+function broadcastOnlineStatus(userId:string , isOnline: Boolean ){
+    //const lastSeen = new Date()
+    const payload = JSON.stringify({type:SocketEventType.ONLINE_STATUS , userId , isOnline });
     onlineUsers.forEach((ws) => {
         if(ws.readyState === WebSocket.OPEN){
             ws.send(payload);
@@ -164,7 +171,7 @@ export async function handleConversationEvent (senderId:string , conversationId:
 
 
 export function broadcastUserUpdate(user : any){
-    const payload = JSON.stringify({type:"user_update" , user});
+    const payload = JSON.stringify({type:SocketEventType.USER_UPDATE , user});
     onlineUsers.forEach((ws) => {
         if(ws.readyState === WebSocket.OPEN){
             ws.send(payload);
@@ -179,7 +186,7 @@ export function broadcastMapUpdate(
     location: {latitude:number , longitude:number} | null ,
     isVisibleOnMap?: boolean
 ){
-    const payload = JSON.stringify({type:"map_update" , userId , location , isVisibleOnMap});
+    const payload = JSON.stringify({type:SocketEventType.MAP_UPDATE , userId , location , isVisibleOnMap});
     onlineUsers.forEach((ws , id) => {
         if(id === userId) return; // don't send back to the user who moved/toggled
         if(ws.readyState === WebSocket.OPEN){

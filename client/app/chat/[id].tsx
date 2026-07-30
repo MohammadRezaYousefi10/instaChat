@@ -36,6 +36,12 @@ import { useMessageStore } from "@/store/messageStore";
 import { useConversationStore } from "@/store/conversationStore";
 import { conversationService } from "@/services/chats/conversation.service";
 import { usePresence } from "@/hooks/usePresence";
+import { usePresenceStore } from "@/store/presenceStore";
+import { useTyping } from "@/hooks/useTyping";
+import { useTypingStore } from "@/store/typingStore";
+import { SocketEventType } from "@/services/socket/socket.events";
+import { socketService } from "@/services/socket";
+import { useSocket } from "@/providers/SocketProvider";
 
 
 export default function chatScreen() {
@@ -48,16 +54,16 @@ export default function chatScreen() {
     users,
     //selectedConversation,
     setSelectedConversation,
-    typingUsers,
+    //typingUsers,
     setConversations,
     //setMessages,
-    sendWsEvent,
+    //sendWsEvent,
   } = useApp();
   const user = auth.user;
 
   const selectedConversation = useConversationStore(state => state.selectedConversation);
   //const setSelectedConversation = useConversationStore(state => state.setSelectedConversation);
-
+  const {sendWsEvent} = useSocket()
 
   const conversationStore = useConversationStore.getState();
 
@@ -86,12 +92,17 @@ export default function chatScreen() {
 
   if(!partner) return;
 
-  //const presence = usePresence(partner._id);
+  
+  const presence = usePresence(partner._id);
+  /* console.log('presence' , presence)
+  console.log('presence' , presence.online)
+  console.log('user' , partner.name)
+  console.log('online' , partner.isOnline) */
 
   // Load messages for this conversation
   useEffect(() => {
     // setMessages(id , messages)
-    
+
     console.log('hello' , id)
     if(!id) return router.back();
     setLoading(true);
@@ -110,7 +121,7 @@ export default function chatScreen() {
       })
     }
     fetchMessages()
-  }, [id ]);
+  }, [id]);
   // scroll bottom when messages update
 /* useEffect(() => {
        if (messages.length > 0) {
@@ -191,7 +202,8 @@ if (message) {
     payload: message,
   }); */
   const target = {receiverId : partner!._id}
-  sendWsEvent({type:"message" , ...target , payload: message});
+  sendWsEvent({type: SocketEventType.MESSAGE , ...target , payload: message});
+  //socketService.send({type: SocketEventType.MESSAGE , ...target , payload: message})
   
   //setMessages(selectedConversation._id, messages);
   //addMessage(selectedConversation._id, message);
@@ -358,22 +370,31 @@ useEffect(() => {
     setText(val);
     const target = {receiverId :partner!._id};
     if(!target.receiverId) return;
+    useTypingStore.getState().setTyping(selectedConversation._id , user!._id , true)
 
-    sendWsEvent({type:"typing" , ...target , isTyping:true});
+    sendWsEvent({type: SocketEventType.TYPING , ...target , isTyping:true});
 
     if(typingTimerRef.current) clearTimeout(typingTimerRef.current)
       typingTimerRef.current = setTimeout(() => {
-        sendWsEvent({type:"typing" , ...target , isTyping : false})
+        useTypingStore.getState().clearConversation(selectedConversation._id)
+        sendWsEvent({type:SocketEventType.TYPING , ...target , isTyping : false})
       }, 1500);
   };
 
   // typing indicator helpers
-  const typingEntries = Object.entries(typingUsers).filter(
+  /* const typingEntries = Object.entries(typingUsers).filter(
     ([uid, isTyping]) => {
       if (!isTyping || uid === auth.user?._id) return false;
       return partner?._id === uid;
     },
-  );
+  ); */
+  const typingUsers = useTyping(selectedConversation._id);
+
+  console.log('selectedConversation ' , selectedConversation._id)
+  console.log('typing users ' , typingUsers)
+
+  const isPartnerTyping = typingUsers[partner._id] === true;
+  console.log('isPartnerTyping' , isPartnerTyping)
 
   if (!selectedConversation) {
     return (
@@ -397,9 +418,9 @@ useEffect(() => {
 
   const headerName = partner!.name;
   const headerAvatar = partner!.avatar;
-  const headerSub = partner!.isOnline
+  const headerSub =  presence!.online || partner!.isOnline
     ? "Online"
-    : partner?.lastSeen
+    : presence?.lastSeen || partner!.lastSeen
       ? `Last seen ${formatTime(partner.lastSeen)}`
       : "Offline";
 
@@ -422,7 +443,7 @@ useEffect(() => {
           name={headerName}
           src={headerAvatar}
           size={38}
-          online={partner?.isOnline}
+          online={presence?.online}
         />
 
        
@@ -434,7 +455,7 @@ useEffect(() => {
                 <Text
                   style={[
                     styles.headerSub,
-                    partner?.isOnline && { color: colors.online },
+                    presence?.online && { color: colors.online },
                   ]}
                 >
                   {headerSub}
@@ -497,7 +518,7 @@ useEffect(() => {
         )}
 
         {/* typing indicator */}
-        {typingEntries.length > 0 && (
+        {/* {typingEntries.length > 0 && (
           <View style={styles.typingRow}>
             {typingEntries.map(([uid]) => {
               const u = users.find((x) => x._id === uid) || partner;
@@ -508,13 +529,26 @@ useEffect(() => {
               );
             })}
           </View>
+        )}  */}
+
+        {isPartnerTyping && (
+          <View style={styles.typingRow}>
+              return (
+                <Text  style={styles.typingText}>
+                 {partner!.name  || "Someone"} is typing...
+                </Text>
+              );
+            
+          </View>
         )} 
         
-       {/* <Text>
+       {/*  <Text>
     {presence.online
         ? "Online"
         : "Offline"}
-</Text>  */}
+
+        
+</Text>   */}
 
         {/* input bar */}
         <View style={styles.inputBar}>

@@ -14,6 +14,9 @@ import { api, useApp } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/MessagesScreen.styles";
 import { conversationService } from "@/services/chats/conversation.service";
+import { useTyping } from "@/hooks/useTyping";
+import { useTypingStore } from "@/store/typingStore";
+import { useConnection } from "@/hooks/useConnection";
 
 export default function MessageScreen() {
      
@@ -24,8 +27,10 @@ export default function MessageScreen() {
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
   const {setSelectedConversation , conversations , setConversations }= useApp();
 
+  /* const usersTyping = useTypingStore.getState().typing;
+  console.log('user typing : ' , usersTyping) */
 
-
+  const { status } = useConnection();
   const router = useRouter();
 
   const { colors } = useTheme();
@@ -36,6 +41,8 @@ export default function MessageScreen() {
     try {
       await conversationService.fetch();
       setLoading(false)
+
+  
     } catch (error) {
        setTimeout(fetchConversation , 1000);
     } finally{
@@ -71,7 +78,8 @@ export default function MessageScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       {/* header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Conversations</Text>
+{/*         <Text style={styles.title}>Conversations</Text>*/}      
+          <Text style={styles.title}>{status}</Text>     
         <View style={styles.headerRight}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{conversations.length}</Text>

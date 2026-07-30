@@ -9,13 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thekabisteam.instachat",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "androidStatusBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#f5f6f7",
-      "translucent": false
+        "barStyle": "dark-content",
+        "backgroundColor": "#f5f6f7",
+        "translucent": false
       },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -50,7 +54,6 @@
       "expo-web-browser",
       "expo-secure-store",
       "@clerk/expo"
-  
     ],
     "experiments": {
       "typedRoutes": true,

@@ -78,7 +78,7 @@ export const darkColors: ColorPalette = {
   // Accent / Status
   tertiary: "#d68bc4",
   error: "#ff6b8f",
-  online: "#22c55e",
+  online: "#299952",
 };
 
 // برای سازگاری با فایل‌هایی که هنوز از `import { Colors }` مستقیم استفاده می‌کنن
