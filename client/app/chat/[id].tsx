@@ -12,6 +12,14 @@ import {
   Keyboard,
   
 } from "react-native";
+import {
+  useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorderState,
+} from 'expo-audio';
+
 import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,7 +35,6 @@ import { feedback } from "@/services/feedback";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/ChatScreen.styles";
 
-import { Audio } from "expo-av";
 //import { sendMessage } from "@/services/chat";
 import { useChat } from "@/hooks/useSendMessage";
 //import { useSendMessage } from "@/hooks/useSendMessage";
@@ -272,12 +279,12 @@ useEffect(() => {
 }, []);
 
 // ---- ضبط صدا ----
-const [isRecording, setIsRecording] = useState(false);
+/* const [isRecording, setIsRecording] = useState(false);
 const [recordingDuration, setRecordingDuration] = useState(0);
 const recordingRef = useRef<Audio.Recording | null>(null);
-const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null); */
 
-const formatDuration = (seconds: number) => {
+/* const formatDuration = (seconds: number) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -364,7 +371,44 @@ useEffect(() => {
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     recordingRef.current?.stopAndUnloadAsync().catch(() => {});
   };
-}, []);
+}, []); */
+
+ const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+
+
+  const record = async () => {
+    await audioRecorder.prepareToRecordAsync();
+    audioRecorder.record();
+  };
+
+  const stopRecording = async () => {
+    // The recording will be available on `audioRecorder.uri`.
+    await audioRecorder.stop();
+  };
+
+   const formatDuration = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
+const sendRecording = () => {
+  console.log('audioRecorder ' , audioRecorder)
+}
+
+  useEffect(() => {
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        Alert.alert('Permission to access microphone was denied');
+      }
+
+      setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+    })();
+  }, []);
   
   const handleTyping = (val: string) => {
     setText(val);
@@ -552,7 +596,7 @@ useEffect(() => {
 
         {/* input bar */}
         <View style={styles.inputBar}>
-          {!isRecording &&(
+          {!recorderState.isRecording &&(
           <TouchableOpacity style={styles.attachBtn} onPress={pickMedia}>
               <Ionicons
                 name="image-outline"
@@ -563,7 +607,7 @@ useEffect(() => {
 
           )}
           {/* Media preview */}
-          {mediaUri && !isRecording && (
+          {mediaUri && !recorderState.isRecording && (
             <View style={styles.mediaPreview}>
               <Image source={{ uri: mediaUri }} style={styles.mediaThumb} />
               <TouchableOpacity
@@ -576,17 +620,17 @@ useEffect(() => {
           )}
         {/*   <View style={styles.inputRow}> */}
 
-    {isRecording ? (
+    {recorderState.isRecording ? (
     /* ---- حالت در حال ضبط ---- */
     <View style={styles.recordingRow}>
-      <TouchableOpacity style={styles.recordActionBtn} onPress={cancelRecording}>
+      <TouchableOpacity style={styles.recordActionBtn} onPress={stopRecording}>
         <Ionicons name="trash-outline" size={22} color={colors.error} />
       </TouchableOpacity>
 
       <View style={styles.recordingIndicator}>
         <View style={styles.recordingDot} />
         <Text style={[styles.recordingTimer, { color: colors.onSurface }]}>
-          {formatDuration(recordingDuration)}
+          {formatDuration(recorderState.durationMillis)}
         </Text>
       </View>
 
@@ -641,7 +685,7 @@ useEffect(() => {
                   </LinearGradient>
                 </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity activeOpacity={0.85} onPress={startRecording}>
+                        <TouchableOpacity activeOpacity={0.85} onPress={record}>
                           <LinearGradient colors={[colors.primary, colors.primaryContainer]} style={styles.sendBtn}>
                             <Ionicons name="mic" size={18} color="#fff" />
                           </LinearGradient>

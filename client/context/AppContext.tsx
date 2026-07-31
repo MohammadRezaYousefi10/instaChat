@@ -202,9 +202,9 @@ export function AppProvider({children } : {children : ReactNode}){
         //typingUsers,
         //sendWsEvent
         }}> 
-         <SocketProvider wsUrl={WS_URL}> 
+         {/* <SocketProvider wsUrl={WS_URL}> */} 
             {children}
-     </SocketProvider> 
+     {/* </SocketProvider>  */}
         </AppContext.Provider>
     )
 

@@ -1,38 +1,25 @@
-import { Audio } from "expo-av";
+import { preload, createAudioPlayer, AudioPlayer } from "expo-audio";
 import * as Haptics from "expo-haptics";
 
-let successSound: Audio.Sound | null = null;
-let isLoading = false;
+// Preload at module scope — starts buffering immediately
+preload(require("@/assets/sounds/Sent.mp3"));
 
-// یک‌بار در کل عمر اپ لود می‌شه و بعد فقط replay می‌شه (به‌جای ساخت مجدد هر بار)
-async function getSuccessSound(): Promise<Audio.Sound | null> {
-  if (successSound) return successSound;
-  if (isLoading) return null;
+let successPlayer: AudioPlayer | null = null;
 
-  try {
-    isLoading = true;
-    const { sound } = await Audio.Sound.createAsync(
-      require("@/assets/sounds/Sent.mp3")
-    );
-    successSound = sound;
-    return sound;
-  } catch (err) {
-    console.error("feedback: load sound error:", err);
-    return null;
-  } finally {
-    isLoading = false;
+function getSuccessPlayer(): AudioPlayer {
+  if (!successPlayer) {
+    successPlayer = createAudioPlayer(require("@/assets/sounds/Sent.mp3"));
   }
+  return successPlayer;
 }
 
 export const feedback = {
   /** برای عملیات موفق: ارسال پیام، ذخیره پروفایل، لایک و... */
   async success() {
     try {
-      const sound = await getSuccessSound();
-      if (sound) {
-        await sound.setPositionAsync(0);
-        await sound.playAsync();
-      }
+      const player = getSuccessPlayer();
+      player.seekTo(0);
+      player.play();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
       console.error("feedback.success error:", err);
@@ -62,11 +49,11 @@ export const feedback = {
     } catch {}
   },
 
-  /** آزاد کردن حافظه صدا موقع خروج از اپ (اختیاری، معمولاً لازم نیست) */
+  /** آزاد کردن حافظه صدا موقع خروج از اپ */
   async unload() {
-    if (successSound) {
-      await successSound.unloadAsync();
-      successSound = null;
+    if (successPlayer) {
+      successPlayer.remove();
+      successPlayer = null;
     }
   },
 };

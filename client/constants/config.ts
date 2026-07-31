@@ -4,8 +4,8 @@ const daftarIos = "172.20.10.3"
 const homeIos = "192.168.1.2"
 
 const HOST = Platform.select({
-    ios: daftarIos,
-    android: daftarIos,
+    ios: homeIos,
+    android: homeIos,
     default : "localhost"
 })
 
