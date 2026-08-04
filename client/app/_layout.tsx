@@ -97,7 +97,8 @@ export default function RootLayout() {
       <ClerkLoaded>
         <GestureHandlerRootView style={{ flex: 1 }}>
             <BottomSheetModalProvider>
-          <AppProvider>            
+          <AppProvider>          
+              
             <AuthGuard />
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(auth)" />

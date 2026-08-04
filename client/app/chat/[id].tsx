@@ -10,7 +10,6 @@ import {
   TextInput,
   Alert,
   Keyboard,
-  
 } from "react-native";
 import {
   useAudioRecorder,
@@ -18,18 +17,21 @@ import {
   RecordingPresets,
   setAudioModeAsync,
   useAudioRecorderState,
-} from 'expo-audio';
+} from "expo-audio";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { formatTime } from "@/utils/formatTime";
 import Avatar from "@/components/Avatar";
 import Bubble from "@/components/Bubble";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { api, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { Message } from "@/types";
 import { feedback } from "@/services/feedback";
 import { useTheme } from "@/context/ThemeContext";
@@ -38,7 +40,7 @@ import { getStyles } from "@/assets/styles/ChatScreen.styles";
 //import { sendMessage } from "@/services/chat";
 import { useChat } from "@/hooks/useSendMessage";
 //import { useSendMessage } from "@/hooks/useSendMessage";
-import * as Crypto from 'expo-crypto';
+import * as Crypto from "expo-crypto";
 import { useMessageStore } from "@/store/messageStore";
 import { useConversationStore } from "@/store/conversationStore";
 import { conversationService } from "@/services/chats/conversation.service";
@@ -49,10 +51,12 @@ import { useTypingStore } from "@/store/typingStore";
 import { SocketEventType } from "@/services/socket/socket.events";
 import { socketService } from "@/services/socket";
 import { useSocket } from "@/providers/SocketProvider";
-
+import { api } from "@/services/api/api";
+import { usePendingMessages } from "@/hooks/usePendingStore";
+import { PendingMessage } from "@/store/pendingStore";
 
 export default function chatScreen() {
-  const {id} = useLocalSearchParams<{id:string}>()
+  const { id } = useLocalSearchParams<{ id: string }>();
   //const {send}= useSendMessage();
   const router = useRouter();
   let {
@@ -68,19 +72,19 @@ export default function chatScreen() {
   } = useApp();
   const user = auth.user;
 
-  const selectedConversation = useConversationStore(state => state.selectedConversation);
+  const selectedConversation = useConversationStore(
+    (state) => state.selectedConversation,
+  );
   //const setSelectedConversation = useConversationStore(state => state.setSelectedConversation);
-  const {sendWsEvent} = useSocket()
+  const { sendWsEvent } = useSocket();
 
   const conversationStore = useConversationStore.getState();
 
-  const { messages , send } = useChat(selectedConversation!._id);
-  const { setMessages , addMessage , getConversationMessages} = useMessageStore();
+  const { messages, send } = useChat(selectedConversation!._id);
+  const { setMessages, addMessage, getConversationMessages } =
+    useMessageStore();
 
-
-  
-
-  const {colors } = useTheme()
+  const { colors } = useTheme();
   const styles = getStyles(colors);
 
   const [text, setText] = useState("");
@@ -90,16 +94,13 @@ export default function chatScreen() {
   const [mediaName, setMediaName] = useState<string>("media.jpg");
   const [mediaUri, setMediaUri] = useState<string | null>(null);
 
-
-
   const flatListRef = useRef<FlatList>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const partner = selectedConversation?.participant;
 
-  if(!partner) return;
+  if (!partner) return;
 
-  
   const presence = usePresence(partner._id);
   /* console.log('presence' , presence)
   console.log('presence' , presence.online)
@@ -110,27 +111,31 @@ export default function chatScreen() {
   useEffect(() => {
     // setMessages(id , messages)
 
-    console.log('hello' , id)
-    if(!id) return router.back();
+    console.log("hello", id);
+    if (!id) return router.back();
     setLoading(true);
     const fetchMessages = () => {
       // setMessages(id , messages)
-      api.get(`/api/messages/conversations/${id}/messages`).then(({data}) => {
-        if(data.success) {
-          //console.log("Messages : " , data.Messages)
-          setMessages(id, data.Messages);
+      api
+        .get(`/api/messages/conversations/${id}/messages`)
+        .then(({ data }) => {
+          if (data.success) {
+            //console.log("Messages : " , data.Messages)
+            setMessages(id, data.Messages);
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          setTimeout(fetchMessages, 1000);
+        })
+        .finally(() => {
           setLoading(false);
-        }
-      }).catch(()=>{
-        setTimeout(fetchMessages, 1000);
-      }).finally(() => {
-         setLoading(false);
-      })
-    }
-    fetchMessages()
+        });
+    };
+    fetchMessages();
   }, [id]);
   // scroll bottom when messages update
-/* useEffect(() => {
+  /* useEffect(() => {
        if (messages.length > 0) {
       setTimeout(
         () => flatListRef.current?.scrollToEnd({ animated: true }),
@@ -150,18 +155,19 @@ export default function chatScreen() {
           try {
             //const { data } = await api.delete(`/api/messages/conversations/${selectedConversation?._id}`);
             router.back();
-            await conversationService.deleteConversation(selectedConversation!._id);
+            await conversationService.deleteConversation(
+              selectedConversation!._id,
+            );
             /* if (data.success) {
               //setConversations((prev) => prev.filter((c) => c._id !== selectedConversation?._id));
               conversationStore.removeConversation(selectedConversation!._id);
               } */
             //setSelectedConversation(null);
-           
           } catch (error) {
             Alert.alert("Error", "Failed to delete chat");
           }
-        }
-      }
+        },
+      },
     ]);
   }
 
@@ -178,19 +184,23 @@ export default function chatScreen() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       setMediaUri(asset.uri);
-      setMediaMime(asset.mimeType || "image/jpeg")
-      setMediaName(asset.fileName || (asset.mimeType?.startsWith("video") ? "video.mp4" : "photo.jpg"))
+      setMediaMime(asset.mimeType || "image/jpeg");
+      setMediaName(
+        asset.fileName ||
+          (asset.mimeType?.startsWith("video") ? "video.mp4" : "photo.jpg"),
+      );
     }
   };
 
-const handleSend = async () => {
+  const handleSend = async () => {
     //if ((!text.trim() && !mediaUri) || !selectedConversation) return;
     if ((!text.trim() && !mediaUri) || !partner || !user) return;
     setSending(true);
+    //const myText = text;
     try {
-    const clientId = Crypto.randomUUID();
+      const clientId = Crypto.randomUUID();
 
-    const message = await send({
+      const message = await send({
         senderId: user._id,
         receiverId: partner._id,
         conversationId: selectedConversation._id,
@@ -198,29 +208,40 @@ const handleSend = async () => {
         mediaUri,
         mediaMime,
         mediaName,
-        clientId
-});
+        clientId,
+        status: "pending",
+      });
+      //setText("");
 
-if (message) {
-  console.log('sending web socket')
-  /* sendWsEvent({
+    setText("");
+
+      setMediaUri(null);
+
+
+      if (message) {
+        console.log("sending web socket");
+        /* sendWsEvent({
     type: "message",
     receiverId: partner._id,
     payload: message,
   }); */
-  const target = {receiverId : partner!._id}
-  sendWsEvent({type: SocketEventType.MESSAGE , ...target , payload: message});
-  //socketService.send({type: SocketEventType.MESSAGE , ...target , payload: message})
-  
-  //setMessages(selectedConversation._id, messages);
-  //addMessage(selectedConversation._id, message);
-  conversationStore.updateLastMessage(selectedConversation._id , message);
+        const target = { receiverId: partner!._id };
+        sendWsEvent({
+          type: SocketEventType.MESSAGE,
+          ...target,
+          payload: message,
+        });
+        //socketService.send({type: SocketEventType.MESSAGE , ...target , payload: message})
 
-  setText("");
-  setMediaUri(null);
-  feedback.success() 
-}
-    
+        //setMessages(selectedConversation._id, messages);
+        //addMessage(selectedConversation._id, message);
+        conversationStore.updateLastMessage(selectedConversation._id, message);
+
+        //setText("");
+        //setMediaUri(null);
+        feedback.success();
+      }
+
       /* const formData = new FormData();
       formData.append("receiverId" , partner!._id);
       if(text.trim()) formData.append("text" , text.trim());
@@ -231,7 +252,7 @@ if (message) {
       const {data} = await api.post<{success:boolean , message:Message}>("/api/messages/send" , formData , {
         headers: {"Content-Type" : "multipart/form-data"}
       }) */
-   /*    const data = await sendMessage({
+      /*    const data = await sendMessage({
             receiverId: partner._id,
             text,
             mediaUri,
@@ -248,43 +269,46 @@ if (message) {
         setMediaUri(null)
       }
       feedback.success() */
-    } catch (err:any) {
-      Alert.alert("Error" , err?.response?.data?.message || "Failed to send message");
+    } catch (err: any) {
+      Alert.alert(
+        "Error",
+        err?.response?.data?.message || "Failed to send message",
+      );
       setText("");
-    setMediaUri(null);
-    feedback.error() 
-    }finally{
+      setMediaUri(null);
+      feedback.error();
+    } finally {
       //setLoading(false)
-      setSending(false)
+      setSending(false);
     }
   };
 
   const insets = useSafeAreaInsets();
-const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-// ردیابی وضعیت کیبورد برای padding دینامیک
-useEffect(() => {
-  const showSub = Keyboard.addListener(
-    Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-    () => setKeyboardVisible(true)
-  );
-  const hideSub = Keyboard.addListener(
-    Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-    () => setKeyboardVisible(false)
-  );
-  return () => {
-    showSub.remove();
-    hideSub.remove();
-  };
-}, []);
+  // ردیابی وضعیت کیبورد برای padding دینامیک
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardVisible(false),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
-// ---- ضبط صدا ----
-/* const [isRecording, setIsRecording] = useState(false);
+  // ---- ضبط صدا ----
+  /* const [isRecording, setIsRecording] = useState(false);
 const [recordingDuration, setRecordingDuration] = useState(0);
 const recordingRef = useRef<Audio.Recording | null>(null);
 const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null); */
 
-/* const formatDuration = (seconds: number) => {
+  /* const formatDuration = (seconds: number) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -373,9 +397,8 @@ useEffect(() => {
   };
 }, []); */
 
- const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
-
 
   const record = async () => {
     await audioRecorder.prepareToRecordAsync();
@@ -387,20 +410,20 @@ useEffect(() => {
     await audioRecorder.stop();
   };
 
-   const formatDuration = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};
-const sendRecording = () => {
-  console.log('audioRecorder ' , audioRecorder)
-}
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+  const sendRecording = () => {
+    console.log("audioRecorder ", audioRecorder);
+  };
 
   useEffect(() => {
     (async () => {
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted) {
-        Alert.alert('Permission to access microphone was denied');
+        Alert.alert("Permission to access microphone was denied");
       }
 
       setAudioModeAsync({
@@ -409,20 +432,22 @@ const sendRecording = () => {
       });
     })();
   }, []);
-  
+
   const handleTyping = (val: string) => {
     setText(val);
-    const target = {receiverId :partner!._id};
-    if(!target.receiverId) return;
-    useTypingStore.getState().setTyping(selectedConversation._id , user!._id , true)
+    const target = { receiverId: partner!._id };
+    if (!target.receiverId) return;
+    useTypingStore
+      .getState()
+      .setTyping(selectedConversation._id, user!._id, true);
 
-    sendWsEvent({type: SocketEventType.TYPING , ...target , isTyping:true});
+    sendWsEvent({ type: SocketEventType.TYPING, ...target, isTyping: true });
 
-    if(typingTimerRef.current) clearTimeout(typingTimerRef.current)
-      typingTimerRef.current = setTimeout(() => {
-        useTypingStore.getState().clearConversation(selectedConversation._id)
-        sendWsEvent({type:SocketEventType.TYPING , ...target , isTyping : false})
-      }, 1500);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      useTypingStore.getState().clearConversation(selectedConversation._id);
+      sendWsEvent({ type: SocketEventType.TYPING, ...target, isTyping: false });
+    }, 1500);
   };
 
   // typing indicator helpers
@@ -434,18 +459,18 @@ const sendRecording = () => {
   ); */
   const typingUsers = useTyping(selectedConversation._id);
 
-  console.log('selectedConversation ' , selectedConversation._id)
-  console.log('typing users ' , typingUsers)
+  //console.log("selectedConversation ", selectedConversation._id);
+  //console.log("typing users ", typingUsers);
 
   const isPartnerTyping = typingUsers[partner._id] === true;
-  console.log('isPartnerTyping' , isPartnerTyping)
+  //console.log("isPartnerTyping", isPartnerTyping);
 
   if (!selectedConversation) {
     return (
       <SafeAreaView style={styles.safe}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-        </TouchableOpacity>   
+        </TouchableOpacity>
         <View style={styles.emptyState}>
           <Ionicons
             name="chatbubbles-outline"
@@ -454,88 +479,85 @@ const sendRecording = () => {
           />
           <text style={styles.emptyText}>Conversation not found</text>
         </View>
-
-
       </SafeAreaView>
     );
   }
 
   const headerName = partner!.name;
   const headerAvatar = partner!.avatar;
-  const headerSub =  presence!.online || partner!.isOnline
-    ? "Online"
-    : presence?.lastSeen || partner!.lastSeen
-      ? `Last seen ${formatTime(partner.lastSeen)}`
-      : "Offline";
+  const headerSub =
+    presence!.online || partner!.isOnline
+      ? "Online"
+      : presence?.lastSeen || partner!.lastSeen
+        ? `Last seen ${formatTime(partner.lastSeen)}`
+        : "Offline";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      
       <KeyboardAvoidingView
         style={styles.kav}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         // keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-      {/* header */}
+        {/* header */}
 
-      <View style={styles.header} >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-        </TouchableOpacity>
-
-        <Avatar
-          name={headerName}
-          src={headerAvatar}
-          size={38}
-          online={presence?.online}
-        />
-
-       
-        <View style={styles.headerInfo}>
-                <Text style={styles.headerName} numberOfLines={1}>
-                  {headerName}
-                </Text>
-                <Text style={styles.headerHandle}>@{partner?.handle}</Text>
-                <Text
-                  style={[
-                    styles.headerSub,
-                    presence?.online && { color: colors.online },
-                  ]}
-                >
-                  {headerSub}
-                </Text>
-              </View>
-       
-
-      
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.backBtn}>
-            <Ionicons
-              name="call-outline"
-              size={20}
-              color={colors.onSurfaceVariant}
-            />
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.backBtn}>
-            <Ionicons
-              name="videocam-outline"
-              size={20}
-              color={colors.onSurfaceVariant}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.backBtn} onPress={deletChat}>
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color={colors.onSurfaceVariant}
-            />
-          </TouchableOpacity>
+
+          <Avatar
+            name={headerName}
+            src={headerAvatar}
+            size={38}
+            online={presence?.online}
+          />
+
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName} numberOfLines={1}>
+              {headerName}
+            </Text>
+            <Text style={styles.headerHandle}>@{partner?.handle}</Text>
+            <Text
+              style={[
+                styles.headerSub,
+                presence?.online && { color: colors.online },
+              ]}
+            >
+              {headerSub}
+            </Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.backBtn}>
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color={colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backBtn}>
+              <Ionicons
+                name="videocam-outline"
+                size={20}
+                color={colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backBtn} onPress={deletChat}>
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      {/* main */}
+        {/* main */}
 
-    
         {/* Messages */}
         {loading ? (
           <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />
@@ -577,16 +599,15 @@ const sendRecording = () => {
 
         {isPartnerTyping && (
           <View style={styles.typingRow}>
-              return (
-                <Text  style={styles.typingText}>
-                 {partner!.name  || "Someone"} is typing...
-                </Text>
-              );
-            
+            return (
+            <Text style={styles.typingText}>
+              {partner!.name || "Someone"} is typing...
+            </Text>
+            );
           </View>
-        )} 
-        
-       {/*  <Text>
+        )}
+
+        {/*  <Text>
     {presence.online
         ? "Online"
         : "Offline"}
@@ -596,15 +617,14 @@ const sendRecording = () => {
 
         {/* input bar */}
         <View style={styles.inputBar}>
-          {!recorderState.isRecording &&(
-          <TouchableOpacity style={styles.attachBtn} onPress={pickMedia}>
+          {!recorderState.isRecording && (
+            <TouchableOpacity style={styles.attachBtn} onPress={pickMedia}>
               <Ionicons
                 name="image-outline"
                 size={22}
                 color={colors.onSurfaceVariant}
               />
             </TouchableOpacity>
-
           )}
           {/* Media preview */}
           {mediaUri && !recorderState.isRecording && (
@@ -618,41 +638,47 @@ const sendRecording = () => {
               </TouchableOpacity>
             </View>
           )}
-        {/*   <View style={styles.inputRow}> */}
+          {/*   <View style={styles.inputRow}> */}
 
-    {recorderState.isRecording ? (
-    /* ---- حالت در حال ضبط ---- */
-    <View style={styles.recordingRow}>
-      <TouchableOpacity style={styles.recordActionBtn} onPress={stopRecording}>
-        <Ionicons name="trash-outline" size={22} color={colors.error} />
-      </TouchableOpacity>
+          {recorderState.isRecording ? (
+            /* ---- حالت در حال ضبط ---- */
+            <View style={styles.recordingRow}>
+              <TouchableOpacity
+                style={styles.recordActionBtn}
+                onPress={stopRecording}
+              >
+                <Ionicons name="trash-outline" size={22} color={colors.error} />
+              </TouchableOpacity>
 
-      <View style={styles.recordingIndicator}>
-        <View style={styles.recordingDot} />
-        <Text style={[styles.recordingTimer, { color: colors.onSurface }]}>
-          {formatDuration(recorderState.durationMillis)}
-        </Text>
-      </View>
+              <View style={styles.recordingIndicator}>
+                <View style={styles.recordingDot} />
+                <Text
+                  style={[styles.recordingTimer, { color: colors.onSurface }]}
+                >
+                  {formatDuration(recorderState.durationMillis)}
+                </Text>
+              </View>
 
-      <TouchableOpacity
-        style={styles.recordActionBtn}
-        onPress={sendRecording}
-        disabled={sending}
-      >
-        <LinearGradient
-          colors={[colors.primary, colors.primaryContainer]}
-          style={styles.sendBtn}
-        >
-          {sending ? (
-            <ActivityIndicator color="#fff" size="small" />
+              <TouchableOpacity
+                style={styles.recordActionBtn}
+                onPress={sendRecording}
+                disabled={sending}
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.primaryContainer]}
+                  style={styles.sendBtn}
+                >
+                  {sending ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Ionicons name="checkmark" size={18} color="#fff" />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           ) : (
-            <Ionicons name="checkmark" size={18} color="#fff" />
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
-  ) : (   
-            <><TextInput
+            <>
+              <TextInput
                 style={styles.textInput}
                 value={text}
                 onChangeText={handleTyping}
@@ -660,15 +686,18 @@ const sendRecording = () => {
                 placeholderTextColor={colors.outlineVariant}
                 multiline
                 maxLength={2000}
-                autoCapitalize="none" 
-                keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
-                />
+                autoCapitalize="none"
+                keyboardAppearance={
+                  colors.surface === "#121314" ? "dark" : "light"
+                }
+              />
 
-                {text.trim() || mediaUri ? (
+              {text.trim() || mediaUri ? (
                 <TouchableOpacity
                   disabled={(!text.trim() && !mediaUri) || sending}
                   activeOpacity={0.85}
-                  onPress={handleSend}>
+                  onPress={handleSend}
+                >
                   <LinearGradient
                     colors={[colors.primary, colors.primaryContainer]}
                     style={[
@@ -679,25 +708,23 @@ const sendRecording = () => {
                     {/* {sending ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) :  */}
-                    
-                      <Ionicons name="send" size={16} color="#fff" />
-                
+
+                    <Ionicons name="send" size={16} color="#fff" />
                   </LinearGradient>
                 </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity activeOpacity={0.85} onPress={record}>
-                          <LinearGradient colors={[colors.primary, colors.primaryContainer]} style={styles.sendBtn}>
-                            <Ionicons name="mic" size={18} color="#fff" />
-                          </LinearGradient>
-                        </TouchableOpacity>
-      )}
-                </>
-
-          )  }
-
+              ) : (
+                <TouchableOpacity activeOpacity={0.85} onPress={record}>
+                  <LinearGradient
+                    colors={[colors.primary, colors.primaryContainer]}
+                    style={styles.sendBtn}
+                  >
+                    <Ionicons name="mic" size={18} color="#fff" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
-        
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

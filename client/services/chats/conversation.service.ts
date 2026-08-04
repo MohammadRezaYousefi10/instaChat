@@ -1,6 +1,6 @@
 import { Conversation, Message } from "@/types";
 import { useConversationStore } from "@/store/conversationStore";
-import { api } from "@/context/AppContext";
+import { api } from "@/services/api/api";
 
 interface ConversationResponse {
   success: boolean;

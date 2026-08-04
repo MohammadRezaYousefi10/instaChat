@@ -69,6 +69,18 @@ export interface PongEvent {
 
 }
 
+export interface MessageAckEvent{
+
+type:SocketEventType.MESSAGE_ACK;
+
+clientId:string;
+
+messageId:string;
+
+createdAt:string;
+
+}
+
 export type SocketEvent =
 
     | MessageEvent
@@ -83,4 +95,6 @@ export type SocketEvent =
 
     | PingEvent
 
-    | PongEvent;
+    | PongEvent
+    
+    | MessageAckEvent;

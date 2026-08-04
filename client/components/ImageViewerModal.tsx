@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Modal,
   View,
-  Image,
   StyleSheet,
   TouchableOpacity,
   Text,
@@ -11,12 +10,13 @@ import {
   ActivityIndicator,
   Share,
 } from "react-native";
-import ImageView from "react-native-image-viewing";
+//import ImageView from "react-native-image-viewing";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as MediaLibrary from "expo-media-library";
 import { Colors } from "@/constants/Colors";
 // for SDK 56
-// import * as FileSystem from "expo-file-system";
+//import * as FileSystem from "expo-file-system";
 // for SDK 54
 import * as FileSystem from "expo-file-system/legacy";
 import { useTheme } from "@/context/ThemeContext";
@@ -41,7 +41,7 @@ export default function ImageViewerModal({
   const [loading, setLoading] = useState(false);
   const [checkMark, setCheckMark] = useState(false);
   const { setStatusBarOverride  , colors} = useTheme();
-  const styles = getStyles(colors)
+  //const styles = getStyles(colors)
 
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function ImageViewerModal({
       animationType="none"
       onRequestClose={onClose}
     >
-      <ImageView
+    {/*   <ImageView
         images={[{ uri: imageUri }]}
         imageIndex={0}
         visible={visible}
@@ -155,11 +155,80 @@ export default function ImageViewerModal({
             </TouchableOpacity>
           </View>
         )}
-      />
+      /> */}
+
+
+       <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.iconBtn} onPress={onClose}>
+            <Ionicons name="arrow-back" size={26} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={handleSaveToGallery}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : checkMark ? (
+              <View style={styles.footer}>
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.actionText}>Image Saved</Text>
+              </View>
+            ) : (
+              <Ionicons name="download-outline" size={24} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Image */}
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
+          contentFit="contain"
+        />
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={24} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
   
     </Modal>
   </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'space-between',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  image: {
+    flex: 1,
+    width: '100%',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  iconBtn: {
+    padding: 8,
+  },
+  actionBtn: {
+    padding: 8,
+  },
+  actionText: {
+    color: '#fff',
+    marginLeft: 6,
+  },
+});
 
  

@@ -9,6 +9,9 @@ import { useColorScheme as useSystemColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { lightColors, darkColors, ColorPalette } from "@/constants/Colors";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+//import { NavigationBar } from 'expo-navigation-bar';
+
 
 type ThemeMode = "light" | "dark" | "system";
 type StatusBarOverride = { style: "light" | "dark"; backgroundColor?: string } | null;
@@ -74,10 +77,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const activeBg = override?.backgroundColor ?? colors.surface;
 
   return (
+    // backgroundColor={activeBg} translucent={false}
+        <SafeAreaProvider>
+
     <ThemeContext.Provider value={value}>
-      <StatusBar style={activeStyle} backgroundColor={activeBg} translucent={false} />
+      <StatusBar style={activeStyle} />
       {children}
     </ThemeContext.Provider>
+    </SafeAreaProvider>
   );
 }
 

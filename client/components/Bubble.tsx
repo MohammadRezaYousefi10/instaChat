@@ -16,12 +16,10 @@ interface BubbleProps {
   isMine: boolean;
 }
 
-
-
 export default function Bubble({ msg, isMine }: BubbleProps) {
   const content = <BubbleContent msg={msg} isMine={isMine} />;
 
-  const {colors } = useTheme()
+  const { colors } = useTheme();
   const styles = getStyles(colors);
 
   return (
@@ -33,7 +31,6 @@ export default function Bubble({ msg, isMine }: BubbleProps) {
           end={{ x: 1, y: 1 }}
           style={[styles.bubble, styles.bubbleMe]}
         >
-          
           {content}
         </LinearGradient>
       ) : (
@@ -44,16 +41,15 @@ export default function Bubble({ msg, isMine }: BubbleProps) {
 }
 
 function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
-  const {colors } = useTheme()
+  const { colors } = useTheme();
   const styles = getStyles(colors);
   return (
-   
     <View>
       {msg.mediaUrl && (
         <View style={styles.mediaWrapper}>
           {msg.mediaType === "image" ? (
             // onPress={() => Linking.openURL(msg.mediaUrl!)} when we open photo user go to this link
-            <TouchableOpacity >
+            <TouchableOpacity>
               <Image
                 source={{ uri: msg.mediaUrl }}
                 style={styles.mediaImage}
@@ -73,11 +69,8 @@ function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
             isMine ? styles.msgTextMe : styles.msgTextThem,
           ]}
         >
-     
           {msg.text}
-            
         </Text>
-        
       )}
 
       <View
@@ -90,35 +83,19 @@ function BubbleContent({ msg, isMine }: { msg: Message; isMine: boolean }) {
         </Text>
         {isMine && (
           <>
-             {/* <Ionicons name={msg.read ? "checkmark-done" : "checkmark"} size={12} 
+            {/* <Ionicons name={msg.read ? "checkmark-done" : "checkmark"} size={12} 
             color={msg.read ? colors.online : `${colors.onPrimary}88`}/> */}
-              <MessageStatus2 status={msg.status } read={msg.read}/>
+            <MessageStatus2 status={msg.status} read={msg.read} />
 
-                {msg.status==="failed" && (
-<TouchableOpacity
-    onPress={()=>
-        chatService.retry(
-            msg
-        )
-    }
->
-    <Ionicons name="refresh-outline" size={24}/>
-
-</TouchableOpacity>
-
-)}
-       
-            </>
+            {msg.status === "failed" && (
+              <TouchableOpacity onPress={() => chatService.retry(msg)}>
+                <Ionicons name="refresh-outline" size={24} />
+              </TouchableOpacity>
+            )}
+          </>
         )}
-             
-     
-      </View> 
-
-          
+      </View>
     </View>
-     
-
-    
   );
 }
 

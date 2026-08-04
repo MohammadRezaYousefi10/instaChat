@@ -24,6 +24,7 @@ export interface User {
     isTemp?: boolean;
 } */
   export type MessageStatus =
+    | "pending"
     | "queued"
     | "sending"
     | "sent"

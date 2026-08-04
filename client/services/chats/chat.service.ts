@@ -2,8 +2,9 @@ import { createTempMessage } from "@/utils/createTempMessage";
 import { useMessageStore } from "@/store/messageStore";
 import { sendMessage } from "./sendMessage";
 import * as Crypto from 'expo-crypto';
-import { Message } from "@/types";
+import { Message  , MessageStatus} from "@/types";
 import { outboxService } from "./outbox.service";
+import { usePendingStore } from "@/store/pendingStore";
 
 export interface SendParams {
   senderId: string;
@@ -14,7 +15,10 @@ export interface SendParams {
   mediaMime?: string;
   mediaName?: string;
   clientId:string;
+  status?: MessageStatus
 }
+
+
 
 const clientId = Crypto.randomUUID();
 
@@ -34,15 +38,38 @@ class ChatService {
         : params.mediaUri
         ? "image"
         : undefined,
-        clientId
+        clientId,
+        status:params.status
+
     });
 
     store.addMessage(params.conversationId, tempMessage);
+    usePendingStore.getState().add({
+      clientId,
+      conversationId: params.conversationId,
+      receiverId: params.receiverId,
+
+      text: params.text,
+      status: params.status ?? "failed",
+      mediaUri: params.mediaUri ?? "",
+      mediaType: params.mediaMime?.startsWith("video")
+        ? "video"
+        : params.mediaUri
+          ? "image"
+          : undefined,
+
+      createdAt: Date.now(),
+
+      retryCount: 0,
+
+      nextRetryAt: Date.now(),
+      senderId: params.senderId
+    }); 
     
     try {
       
       const result = await sendMessage(params);
-        
+      //usePendingStore.add(clientId);
    
     
       store.replaceTempMessage(
@@ -57,6 +84,7 @@ class ChatService {
       return result.message;
       
     } catch (error) {
+      console.log('send faild ')
       store.updateStatus(
         params.conversationId,
         tempMessage._id,
@@ -68,13 +96,16 @@ class ChatService {
   }
 
    async retry(message: Message) {
+    console.log('retrying Sending Message ' , message)
 
     const store = useMessageStore.getState();
+
+    
 
     store.updateStatus(
         message.conversationId,
         message._id,
-        "sending"
+        "pending"
     );
 
     return this.performSend(
@@ -128,7 +159,7 @@ private async performSend(
     }
 
     catch(error){
-
+      console.log('performSend faild ' , error)
         store.updateStatus(
 
             message.conversationId,

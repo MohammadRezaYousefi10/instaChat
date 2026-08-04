@@ -1,4 +1,5 @@
-import { api } from "@/context/AppContext";
+import { api } from "@/services/api/api";
+import { usePendingStore } from "@/store/pendingStore";
 import { Message } from "@/types";
 
 export interface SendMessageRequest {
@@ -53,6 +54,7 @@ export async function sendMessage({
     } as any);
   }
 
+
   const { data } = await api.post<SendMessageResponse>(
     "/api/messages/send",
 
@@ -64,6 +66,7 @@ export async function sendMessage({
       },
     },
   );
+
 
   return data;
 }

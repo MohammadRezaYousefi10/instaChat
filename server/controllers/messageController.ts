@@ -5,195 +5,261 @@ import cloudinary from "../config/cloudnairy.js";
 import Message from "../models/Message.js";
 import { Readable } from "stream";
 import { handleConversationEvent } from "../socket/socketManager.js";
+import { onlineUsers } from "../socket/socketManager.js";
+import { SocketEventType } from "../types/socket.events.js";
 
-// Helper : find convo between two users 
-async function findConversation (userId : string , otherId : string){
-    return Conversation.findOne({
-        $and: [
-            {participants: {$elemMatch: {$eq : userId}}},
-            {participants: {$elemMatch: {$eq : otherId}}},
-            {$expr: { $eq : [{$size : "$participants"} , 2]}}
-        ]
-    }as any)
+// Helper : find convo between two users
+async function findConversation(userId: string, otherId: string) {
+  return Conversation.findOne({
+    $and: [
+      { participants: { $elemMatch: { $eq: userId } } },
+      { participants: { $elemMatch: { $eq: otherId } } },
+      { $expr: { $eq: [{ $size: "$participants" }, 2] } },
+    ],
+  } as any);
 }
 
 // start or get a conversation with a user
-export const getOrCreateConversation = async (req:AuthRequest , res : Response) => {
-    const userId = req.user!.id;
-    const targetUserId = String(req.params.targetUserId)
+export const getOrCreateConversation = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  const userId = req.user!.id;
+  const targetUserId = String(req.params.targetUserId);
 
-   
+  let conversation: any = await findConversation(userId, targetUserId);
 
-    let conversation : any = await findConversation(userId , targetUserId)
+  if (conversation) {
+    await conversation.populate(
+      "participants",
+      "name email handle avatar isOnline lastSeen",
+    );
+    await conversation.populate("lastMessage");
+  } else {
+    conversation = await Conversation.create({
+      participants: [userId, String(targetUserId)],
+    });
+    await conversation.populate(
+      "participants",
+      "name email handle avatar isOnline lastSeen",
+    );
+  }
 
-    if (conversation) {
-        await conversation.populate("participants" , "name email handle avatar isOnline lastSeen");
-        await conversation.populate("lastMessage")
-    }else{
-        conversation = await Conversation.create({
-            participants : [userId , String(targetUserId)]
-        })
-        await conversation.populate("participants" , "name email handle avatar isOnline lastSeen");
-    }
+  const other = (conversation.participants as any[]).find(
+    (p: any) => p._id !== userId,
+  );
 
-
-    const other = (conversation.participants as any[]).find((p : any) => p._id !== userId)
-
-    res.json({
-        success:true,
-        conversation: {_id: conversation._id , participant : other , lastMessage : conversation.lastMessage}
-    })
-}
+  res.json({
+    success: true,
+    conversation: {
+      _id: conversation._id,
+      participant: other,
+      lastMessage: conversation.lastMessage,
+    },
+  });
+};
 
 // Get all conversations for the current user get
-export const getConversations = async (req:AuthRequest , res : Response) => {
+export const getConversations = async (req: AuthRequest, res: Response) => {
   const userId = req.user!.id;
-  const conversations = await Conversation.find({participants: {$in: [userId]}}).populate
-  ("participants" , "name email handle avatar isOnline lastSeen").populate
-  ("lastMessage").sort({updatedAt : -1})
+  const conversations = await Conversation.find({
+    participants: { $in: [userId] },
+  })
+    .populate("participants", "name email handle avatar isOnline lastSeen")
+    .populate("lastMessage")
+    .sort({ updatedAt: -1 });
 
   const shaped = conversations.map((c) => {
-    const other = (c.participants as any).find((p:any) => p._id !== userId)
-    return { _id : c._id , isGroup : false , participant : other ,
-         lastMessage : c.lastMessage , updatedAt : c.updatedAt}
-  })
+    const other = (c.participants as any).find((p: any) => p._id !== userId);
+    return {
+      _id: c._id,
+      isGroup: false,
+      participant: other,
+      lastMessage: c.lastMessage,
+      updatedAt: c.updatedAt,
+    };
+  });
 
-  res.json({success: true , conversations : shaped})
+  res.json({ success: true, conversations: shaped });
+};
 
-}
+// Send a message
+export const sendMessage = async (req: AuthRequest, res: Response) => {
+  const senderId = req.user!.id;
+  const { receiverId, conversationId, text, clientId } = req.body;
+  const file = req.file;
 
-// Send a message 
-export const sendMessage = async (req:AuthRequest , res : Response) => {
-    const senderId = req.user!.id;
-    const {receiverId , conversationId , text , clientId} = req.body;
-    const file = req.file;
+  if ((!receiverId && !conversationId) || (!text?.trim() && !file)) {
+    res
+      .status(400)
+      .json({
+        success: false,
+        message: "receiverId/conversationId and (text or file) are required",
+      });
+    return;
+  }
+  let mediaUrl = "";
+  let mediaType: "image" | "video" | undefined;
 
-    if((!receiverId && !conversationId) || (!text?.trim() && !file)) {
-        res.status(400).json(
-            {success : false , message: "receiverId/conversationId and (text or file) are required"});
-            return
+  if (file) {
+    try {
+      const resourceType = file.mimetype.startsWith("video")
+        ? "video"
+        : "image";
+      mediaType = resourceType;
+      const uploadPromise = new Promise<{ secure_url: string }>(
+        (resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "insta_chat", resourceType },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result as any);
+            },
+          );
+          const readableStream = new Readable();
+          readableStream.push(file.buffer);
+          readableStream.push(null);
+          readableStream.pipe(uploadStream);
+        },
+      );
+      const result = await uploadPromise;
+      mediaUrl = result.secure_url;
+    } catch (err) {
+      console.error("Cloudnary upload error:", err);
+      res.status(500).json({ success: false, message: "Media upload failed" });
+      return;
     }
-    let mediaUrl = "";
-    let mediaType : "image" | "video" | undefined;
-
-    if(file){
-         try {
-            const resourceType = file.mimetype.startsWith("video") ? "video" : "image"
-            mediaType = resourceType;
-                const uploadPromise = new Promise<{ secure_url: string }>(
-                (resolve, reject) => {
-                    const uploadStream = cloudinary.uploader.upload_stream(
-                    { folder: "insta_chat" , resourceType},
-                    (error, result) => {
-                        if(error) reject(error)
-                        else resolve(result as any)
-                    },
-                    );
-                    const readableStream = new Readable();
-                    readableStream.push(file.buffer)
-                    readableStream.push(null) 
-                    readableStream.pipe(uploadStream)
-            
-                },
-                );
-            const result = await uploadPromise;
-            mediaUrl = result.secure_url;
-              
-            } catch (err) {
-                console.error("Cloudnary upload error:" , err);
-                res.status(500).json({ success: false, message: "Media upload failed" });
-                return
-            }
-    }
-    let conversation;
-    if(conversationId){
-        conversation = await Conversation.findOne({ _id : conversationId , participants : {$in : [senderId]}})
-    }else {
-        conversation = await findConversation(senderId , receiverId) 
-        /* if(!conversation) {
+  }
+  let conversation;
+  if (conversationId) {
+    conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: { $in: [senderId] },
+    });
+  } else {
+    conversation = await findConversation(senderId, receiverId);
+    /* if(!conversation) {
             conversation = await Conversation.create({
                 participants: [senderId , receiverId]
             })
         } */
-    }
+  }
 
-    if(!conversation){
-        res.status(404).json({success : false , message: "Conversation not found"});
-        return;
-    }
-    const message = await Message.create({
-        sender : senderId ,
-        receiver: receiverId || conversation.participants.find((p) => String(p) !== senderId),
-        conversationId : conversation._id,
-        text: text?.trim() ,
-        mediaUrl: mediaUrl || undefined,
-        mediaType, 
-        clientId
-    })
-
-    const savedMessage = await Message.findById(message._id).lean();
-
-    conversation.lastMessage = message._id as any;
-    conversation.updatedAt = new Date();
-    await conversation.save()
-
-    //res.status(201).json({success : true , message})
-    res.status(201).json({
-    success: true,
-    message : savedMessage,
+  if (!conversation) {
+    res.status(404).json({ success: false, message: "Conversation not found" });
+    return;
+  }
+  const message = await Message.create({
+    sender: senderId,
+    receiver:
+      receiverId ||
+      conversation.participants.find((p) => String(p) !== senderId),
     conversationId: conversation._id,
-});
-}
+    text: text?.trim(),
+    mediaUrl: mediaUrl || undefined,
+    mediaType,
+    clientId,
+  });
+
+
+
+  const savedMessage = await Message.findById(message._id).lean();
+    if(!savedMessage) return;
+    
+    const payload = JSON.stringify({
+        type: SocketEventType.MESSAGE_ACK,
+        clientId,
+        messageId: savedMessage._id,
+        createdAt: savedMessage.createdAt,
+      });
+      console.log('sending paylod to MESSAGE_ACK' , payload)
+    onlineUsers.forEach((ws , id) => {
+    //if(id === receiverId) return;
+    console.log('id ' , id)
+    console.log('receiverId ' , receiverId)
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(payload);
+    }
+  });
+
+  conversation.lastMessage = message._id as any;
+  conversation.updatedAt = new Date();
+  await conversation.save();
+
+  //res.status(201).json({success : true , message})
+  res.status(201).json({
+    success: true,
+    message: savedMessage,
+    conversationId: conversation._id,
+  });
+};
 
 // Get all messages in a conversation
-export const getMessages = async (req:AuthRequest , res : Response) => {
-    const userId = req.user!.id;
-    const {conversationId} = req.params;
+export const getMessages = async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { conversationId } = req.params;
 
-    const conversation = await Conversation.findOne({_id : conversationId , participants : {$in : [userId]}})
-    if(!conversation) {
-        res.status(404).json({success : false , message: "Conversation not found"});
-        return;
-    }
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    participants: { $in: [userId] },
+  });
+  if (!conversation) {
+    res.status(404).json({ success: false, message: "Conversation not found" });
+    return;
+  }
 
-    const Messages = await Message.find({conversationId}).sort({createdAt : 1});
-    await Message.updateMany({conversationId , receiver : userId, read:false} , {read : true})
+  const Messages = await Message.find({ conversationId }).sort({
+    createdAt: 1,
+  });
+  await Message.updateMany(
+    { conversationId, receiver: userId, read: false },
+    { read: true },
+  );
 
-    res.json({success : true , Messages });
-
-}
+  res.json({ success: true, Messages });
+};
 
 // Delete a conversation
-export const deleteConversation = async (req:AuthRequest , res : Response) => {
-    const userId = req.user!.id;
-    const {conversationId} = req.params;
+export const deleteConversation = async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { conversationId } = req.params;
 
-    try {
-        const conversation = await Conversation.findById(conversationId);
-        if(!conversation) {
-            res.status(404).json({success : false , message: "Conversation not found"});
-            return;
-        }
-
-        // check if user part of the conversation 
-        const isParticipant = conversation.participants.some((p) => String(p) === userId)
-        if(!isParticipant) {
-            res.status(403).json({success : false , message: "Not authorized to delete this conversation"});
-            return;
-        }
-        // notify other participants before deleting
-        await handleConversationEvent(userId , String(conversationId) , {type: "chat_deleted" , conversationId});
-
-        // Delete all messages in the conversation
-        await Message.deleteMany({conversationId})
-
-
-        // delete the conversation itself
-        await Conversation.findByIdAndDelete(conversationId);
-
-        res.json({success : true , Message: "Chat deleted successfuly" });
-    } catch (error) {
-        res.status(500).json({success : false , message: "Server error"});
+  try {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      res
+        .status(404)
+        .json({ success: false, message: "Conversation not found" });
+      return;
     }
-}
 
+    // check if user part of the conversation
+    const isParticipant = conversation.participants.some(
+      (p) => String(p) === userId,
+    );
+    if (!isParticipant) {
+      res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to delete this conversation",
+        });
+      return;
+    }
+    // notify other participants before deleting
+    await handleConversationEvent(userId, String(conversationId), {
+      type: "chat_deleted",
+      conversationId,
+    });
+
+    // Delete all messages in the conversation
+    await Message.deleteMany({ conversationId });
+
+    // delete the conversation itself
+    await Conversation.findByIdAndDelete(conversationId);
+
+    res.json({ success: true, Message: "Chat deleted successfuly" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

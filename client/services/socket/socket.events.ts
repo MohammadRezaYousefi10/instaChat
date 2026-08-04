@@ -30,4 +30,6 @@ export enum SocketEventType {
   PING = "ping",
 
   PONG = "pong",
+
+  MESSAGE_ACK="message_ack"
 }

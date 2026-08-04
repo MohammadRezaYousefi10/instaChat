@@ -12,6 +12,7 @@ const onlineUsers = new Map<string , WebSocket>()
 // Initialize socket server
 export function initSocketServer(server : any ) {
     const wss = new WebSocketServer({server , path: "/ws"})
+     
     
     wss.on("connection" , async (ws: WebSocket , req : IncomingMessage) => {
         console.log("Client connected");
@@ -195,4 +196,4 @@ export function broadcastMapUpdate(
     })
 }
 
-export {onlineUsers}
+export {onlineUsers }

@@ -1,11 +1,9 @@
 export enum SocketConnectionStatus {
+  CONNECTING = "connecting",
 
-    CONNECTING = "connecting",
+  CONNECTED = "connected",
 
-    CONNECTED = "connected",
+  RECONNECTING = "reconnecting",
 
-    RECONNECTING = "reconnecting",
-
-    DISCONNECTED = "disconnected",
-
+  DISCONNECTED = "disconnected",
 }

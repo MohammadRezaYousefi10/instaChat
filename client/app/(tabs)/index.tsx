@@ -1,4 +1,10 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { Conversation, UserStory } from "@/types";
 import { useRouter } from "expo-router";
@@ -10,7 +16,7 @@ import { FlatList, TextInput } from "react-native-gesture-handler";
 import StoriesBar from "@/components/StoriesBar";
 import StoryViewer from "@/components/StoryViewer";
 import ConvoItem from "@/components/ConvoItem";
-import { api, useApp } from "@/context/AppContext";
+import {  useApp } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/MessagesScreen.styles";
 import { conversationService } from "@/services/chats/conversation.service";
@@ -19,13 +25,11 @@ import { useTypingStore } from "@/store/typingStore";
 import { useConnection } from "@/hooks/useConnection";
 
 export default function MessageScreen() {
-     
-
   const { height } = Dimensions.get("window");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
-  const {setSelectedConversation , conversations , setConversations }= useApp();
+  const { setSelectedConversation, conversations, setConversations } = useApp();
 
   /* const usersTyping = useTypingStore.getState().typing;
   console.log('user typing : ' , usersTyping) */
@@ -40,13 +44,11 @@ export default function MessageScreen() {
     setLoading(true);
     try {
       await conversationService.fetch();
-      setLoading(false)
-
-  
+      setLoading(false);
     } catch (error) {
-       setTimeout(fetchConversation , 1000);
-    } finally{
-       setLoading(false)
+      setTimeout(fetchConversation, 1000);
+    } finally {
+      setLoading(false);
     }
     /* api.get<{success :boolean; conversations:Conversation[]}>("/api/messages/conversations").then(({data}) => {
       if(data.success) setConversations(data.conversations)
@@ -70,23 +72,28 @@ export default function MessageScreen() {
     : conversations;
 
   const openConvo = (c: Conversation) => {
-    setSelectedConversation(c)
+    setSelectedConversation(c);
     router.push(`/chat/${c._id}`);
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       {/* header */}
       <View style={styles.header}>
-{/*         <Text style={styles.title}>Conversations</Text>*/}      
-          <Text style={styles.title}>{status}</Text>     
+        {/*         <Text style={styles.title}>Conversations</Text>*/}
+        <Text style={styles.title}>{status}
+          {(status === "connecting" || status === "reconnecting") && (<Text>...</Text>)}
+
+        {(status === "connecting" || status === "reconnecting") && (
+          <ActivityIndicator color={colors.primary} />
+        )}
+        </Text>
         <View style={styles.headerRight}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{conversations.length}</Text>
           </View>
         </View>
       </View>
-   
 
       {/* search */}
       <View style={styles.searchRow}>
@@ -97,7 +104,7 @@ export default function MessageScreen() {
           onChangeText={setSearch}
           placeholder="Search Conversations..."
           placeholderTextColor={colors.outlineVariant}
-          keyboardAppearance={colors.surface === '#121314' ? 'dark' : 'light'}
+          keyboardAppearance={colors.surface === "#121314" ? "dark" : "light"}
         />
         {search.length > 0 && (
           <TouchableOpacity
@@ -127,36 +134,32 @@ export default function MessageScreen() {
 
       <View style={styles.divider} />
       {/* Conversation list */}
-      {loading ? (
-        <ActivityIndicator style={{ height: height,  }} color={colors.primary} />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(c) => c._id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <ConvoItem
-              convo={item}
-              selected={true}
-              onPress={() => openConvo(item)}
+
+      <FlatList
+        data={filtered}
+        keyExtractor={(c) => c._id}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <ConvoItem
+            convo={item}
+            selected={true}
+            onPress={() => openConvo(item)}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons
+              name="chatbubbles-outline"
+              size={44}
+              color={colors.outlineVariant}
             />
-          )}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons
-                name="chatbubbles-outline"
-                size={44}
-                color={colors.outlineVariant}
-              />
-              <Text style={styles.emptyTitle}>No conversations yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Go to search to start chatting
-              </Text>
-            </View>
-          }
-        />
-      )}
-      
+            <Text style={styles.emptyTitle}>No conversations yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Go to search to start chatting
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }

@@ -26,6 +26,9 @@ export default function MessageStatus2({
     }
 
     switch(status){
+        case "pending":
+
+        return <Ionicons name="time-outline" color={`${Colors.onPrimary}88` }/>;
 
         case"queued":
 

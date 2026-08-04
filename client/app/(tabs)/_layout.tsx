@@ -5,12 +5,16 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from "expo-image";
 import { useApp } from '@/context/AppContext'
 import { useTheme } from '@/context/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 export default function TabLayout() {
   const { auth } = useApp();
   const user = auth.user;
   const {colors} = useTheme()
   
+  const insets = useSafeAreaInsets();
+
 
   const displayAvatar =  user?.avatar;
 
@@ -20,12 +24,13 @@ export default function TabLayout() {
       headerShown:false ,
       tabBarActiveTintColor : colors.primary ,
       tabBarInactiveTintColor: colors.onSurfaceVariant ,
+      
       tabBarStyle : {
         backgroundColor: colors.surfaceLowest,
         borderTopColor: colors.surfaceHigh ,
         borderTopWidth : 1 ,
-        height: 80 ,
-        paddingBottom: 12,
+        height:  80 + insets.bottom ,
+        paddingBottom:  insets.bottom + 12 ,
         paddingTop: 8
       } ,
       tabBarLabelStyle : {

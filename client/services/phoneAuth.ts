@@ -1,6 +1,6 @@
 // client/services/phoneAuth.ts
-import { api, useApp } from "@/context/AppContext";
-import { useUser } from "@clerk/expo";
+import { useApp } from "@/context/AppContext";
+import { api } from "@/services/api/api";
 
 export function usePhoneAuth() {
   // const { user } = useUser(); // send code with clerk in this page
