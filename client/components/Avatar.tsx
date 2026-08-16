@@ -4,7 +4,6 @@ import { Image } from "expo-image";
 import React from 'react'
 import { useTheme } from '@/context/ThemeContext';
 import { getStyles } from '@/assets/styles/Avatar.styles';
-// import { styles } from '@/assets/styles/Avatar.styles';
 
 const PALETTE = ["#4652b0" ,"#933880" ,"#3946a4" ,"#6750A4" ,"#7965AF" ,];
 

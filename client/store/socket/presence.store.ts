@@ -1,12 +1,7 @@
 import { create } from "zustand";
+import type { UserPresence } from "../types";
 
-export interface UserPresence {
 
-    online: boolean;
-
-    lastSeen?: string;
-
-}
 interface PresenceStore {
 
     presence: Record<string, UserPresence>;

@@ -16,7 +16,7 @@ import {
   isoToFlagEmoji,
 } from "@/constants/countries";
 import { useTheme } from "@/context/ThemeContext";
-import { api } from "@/context/AppContext";
+import { api } from "@/services/api/api";
 
 interface Props {
   onChange: (e164: string | null, isValid: boolean) => void;

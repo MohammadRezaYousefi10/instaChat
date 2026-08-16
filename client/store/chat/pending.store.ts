@@ -1,22 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Message, MessageStatus } from "@/types";
-
-export interface PendingMessage {
-    clientId: string;
-    conversationId: string;
-    createdAt: number;
-    retryCount: number;
-    nextRetryAt: number;
-    senderId : string;
-    receiverId : string;
-    text?: string;
-    status : MessageStatus;
-    mediaUri?: string;
-    mediaType?: string;
-    //mediaName?: string;
-}
+import type { PendingMessage } from "../types";
 
 interface PendingStore {
   pending: Record<string, PendingMessage>;

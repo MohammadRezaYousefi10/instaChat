@@ -1,7 +1,6 @@
-import { Message , MessageStatus } from "@/types";
+import { Message, MessageStatus } from "@/types";
 
 interface CreateTempMessageParams {
-
   senderId: string;
 
   receiverId: string;
@@ -13,13 +12,12 @@ interface CreateTempMessageParams {
   mediaUri?: string | null;
 
   mediaType?: "image" | "video";
-  clientId?:string
-  status?: MessageStatus
+  clientId?: string;
+  status?: MessageStatus;
 }
- // const clientId = crypto.randomUUID();
+// const clientId = crypto.randomUUID();
 
 export function createTempMessage({
-
   senderId,
 
   receiverId,
@@ -32,11 +30,9 @@ export function createTempMessage({
 
   mediaType,
   clientId,
-  status
+  status,
 }: CreateTempMessageParams): Message {
-   
   return {
-
     _id: `temp-${Date.now()}`,
     clientId,
     sender: senderId,
@@ -58,7 +54,5 @@ export function createTempMessage({
     status: status,
 
     isTemp: true,
-
   };
-
 }

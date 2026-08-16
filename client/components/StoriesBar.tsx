@@ -1,100 +1,136 @@
-import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
+import React, { useEffect, useState } from "react";
 // import { styles } from '@/assets/styles/StoriesBar.styles'
-import { UserStory } from '@/types'
-import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '@/constants/Colors'
-import * as ImagePicker from 'expo-image-picker'
-import Avatar from './Avatar'
-import { api, useApp } from '@/context/AppContext'
-import { useTheme } from '@/context/ThemeContext'
-import { getStyles } from '@/assets/styles/StoriesBar.styles'
+import { UserStory } from "@/types";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/Colors";
+import * as ImagePicker from "expo-image-picker";
+import Avatar from "./Avatar";
+import { useApp } from "@/context/AppContext";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/StoriesBar.styles";
+import { api } from "@/services/api/api";
+import { storyService } from "@/services/story/story.service";
+import { useStoryStore } from "@/store";
+import { toast } from "./Toast";
 
 interface StoriesBarProbs {
-    onViewStoty : (us : UserStory) => void
+  onViewStoty: (us: UserStory) => void;
 }
 
-export default function StoriesBar({onViewStoty} : StoriesBarProbs) {
+export default function StoriesBar({ onViewStoty }: StoriesBarProbs) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
-    const {colors } = useTheme()
-    const styles = getStyles(colors);
+  const [uploading, setUploading] = useState(false);
+  //const {userStories , fetchStories} = useApp();
+  const stories = useStoryStore((s) => s.stories);
 
-    const [uploading , setUploading] = useState(false);
-    const {userStories , fetchStories} = useApp();
-
-    useEffect(() => {
+  /* useEffect(() => {
         fetchStories()
-    },[fetchStories])
+    },[fetchStories]) */
+  useEffect(() => {
+    storyService.fetch();
 
-    const pickAndUpload = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if(status !== "granted") {
-            Alert.alert("Permission needed" , "Allow access to your photos to post a story.")
-            return
-        }
+    return () => {
+      storyService.stopRetry();
+    };
+  }, []);
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images" , "videos"] ,
-            quality: 0.8,
-        })
-
-        if (result.canceled || !result.assets[0]) {
-            return;
-        }
-        const asset = result.assets[0];
-        const formData = new FormData();
-        formData.append("file" , {
-            uri: asset.uri,
-            type: asset.mimeType || "image/jpeg",
-            name: asset.fileName || "story.jpg"
-        } as any)
-
-        setUploading(true)
-        try {
-            const {data} = await api.post("/api/stories" , formData ,{
-                headers: {"Content-Type" : "multipart/form-data"}
-            })
-            if(data.success) fetchStories()
-        } catch (error : any) {
-            Alert.alert("Error" , "Failed to post story");
-            console.log(error)
-        }finally{
-            setUploading(false)
-        }
+  const pickAndUpload = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Allow access to your photos to post a story.",
+      );
+      return;
     }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+    const asset = result.assets[0];
+    const formData = new FormData();
+    formData.append("file", {
+      uri: asset.uri,
+      type: asset.mimeType || "image/jpeg",
+      name: asset.fileName || "story.jpg",
+    } as any);
+
+    setUploading(true);
+    try {
+      const { data } = await api.post("/api/stories", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (data.success) {
+          storyService.fetch();
+          toast.show("uploaded successfully " , {icon: "checkmark-circle"})
+    }
+    
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to post story");
+      console.log(error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const refreshing =
+useStoryStore(
+    s => s.refreshing
+);
 
   return (
     <FlatList
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.container}
-    data={[{_addStory : true} , ...userStories] as any[]}
-    keyExtractor={(item , i)=> (item._addStory ? "add" : item.user._id || String(i))}
-    renderItem={({item})=>{
+      refreshing={refreshing}
+      onRefresh={() => storyService.refresh()}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+      data={[{ _addStory: true }, ...stories] as any[]}
+      keyExtractor={(item, i) =>
+        item._addStory ? "add" : item.user._id || String(i)
+      }
+      renderItem={({ item }) => {
         if (item._addStory) {
-            return (
-                <TouchableOpacity style={styles.storyItem} onPress={pickAndUpload} disabled={uploading}>
-                    <View style={styles.addCircle}>
-                        <Ionicons name={uploading ? "hourglass" : "add"} size={24} color={Colors.onSurfaceVariant}/>
-                    </View>
-                    <Text style={styles.label}>Your Story</Text>
-                </TouchableOpacity>
-            )
+          return (
+            <TouchableOpacity
+              style={styles.storyItem}
+              onPress={pickAndUpload}
+              disabled={uploading}
+            >
+              <View style={styles.addCircle}>
+                <Ionicons
+                  name={uploading ? "hourglass" : "add"}
+                  size={24}
+                  color={Colors.onSurfaceVariant}
+                />
+              </View>
+              <Text style={styles.label}>Your Story</Text>
+            </TouchableOpacity>
+          );
         }
         const us = item as UserStory;
         return (
-            <TouchableOpacity style={styles.storyItem} onPress={() => onViewStoty(us)}>
-                <View style={styles.storyRing}>
-                   <Avatar name={us.user.name} src={us.user.avatar} size={52}/>
-                </View>
-                <Text style={styles.label} numberOfLines={1}>
-                    {us.user.name?.split(" ")[0] || us.user.name || "User"}
-                </Text>
-            </TouchableOpacity>
-        )
-    }}
+          <TouchableOpacity
+            style={styles.storyItem}
+            onPress={() => onViewStoty(us)}
+          >
+            <View style={styles.storyRing}>
+              <Avatar name={us.user.name} src={us.user.avatar} size={52} />
+            </View>
+            <Text style={styles.label} numberOfLines={1}>
+              {us.user.name?.split(" ")[0] || us.user.name || "User"}
+            </Text>
+          </TouchableOpacity>
+        );
+      }}
     />
-
-    
-  )
+  );
 }

@@ -1,5 +1,5 @@
 import { Conversation, Message } from "@/types";
-import { useConversationStore } from "@/store/conversationStore";
+import { useConversationStore } from "@/store";
 import { api } from "@/services/api/api";
 
 interface ConversationResponse {
@@ -12,20 +12,21 @@ class ConversationService {
    * دریافت تمام گفتگوها
    */
   async fetch(): Promise<Conversation[]> {
-    const { data } =
-      await api.get<ConversationResponse>(
-        "/api/messages/conversations"
-      );
+    const { data } = await api.get<ConversationResponse>(
+      "/api/messages/conversations",
+    );
 
     if (!data.success) {
       throw new Error("Failed to fetch conversations");
     }
     // console.log('data.conversations ' , data.conversations)
+    //const store = useConversationStore.getState()
 
-    useConversationStore.getState().setConversations(data.conversations);
+    //store.setConversations(data.conversations);
 
     return data.conversations;
   }
+
 
   /**
    * همگام سازی مجدد
@@ -37,28 +38,21 @@ class ConversationService {
   /**
    * حذف گفتگو
    */
-  async deleteConversation(
-    conversationId: string
-  ) {
-    console.log('deleting conversation with id ' , conversationId)
+  async deleteConversation(conversationId: string) {
+    console.log("deleting conversation with id ", conversationId);
     const { data } = await api.delete<{
       success: boolean;
-    }>(
-      `/api/messages/conversations/${conversationId}`
-    );
+    }>(`/api/messages/conversations/${conversationId}`);
 
     if (!data.success) {
       throw new Error("Delete conversation failed");
     }
 
-    const store =
-      useConversationStore.getState();
+    const store = useConversationStore.getState();
 
     store.removeConversation(conversationId);
 
-    store.clearSelectedConversation(
-      conversationId
-    );
+    store.clearSelectedConversation(conversationId);
 
     return true;
   }
@@ -66,26 +60,16 @@ class ConversationService {
   /**
    * بروزرسانی آخرین پیام
    */
-  updateLastMessage(
-    conversationId: string,
-    message: Message
-  ) {
-    const store =
-      useConversationStore.getState();
+  updateLastMessage(conversationId: string, message: Message) {
+    const store = useConversationStore.getState();
 
-    const exists =
-      store.conversations.some(
-        (c) => c._id === conversationId
-      );
+    const exists = store.conversations.some((c) => c._id === conversationId);
 
     if (!exists) {
       return this.sync();
     }
 
-    store.updateLastMessage(
-      conversationId,
-      message
-    );
+    store.updateLastMessage(conversationId, message);
 
     store.moveToTop(conversationId);
   }
@@ -93,36 +77,22 @@ class ConversationService {
   /**
    * اضافه کردن Conversation جدید
    */
-  add(
-    conversation: Conversation
-  ) {
-    useConversationStore
-      .getState()
-      .addConversation(conversation);
+  add(conversation: Conversation) {
+    useConversationStore.getState().addConversation(conversation);
   }
 
   /**
    * بروزرسانی Conversation
    */
-  update(
-    conversation: Conversation
-  ) {
-    useConversationStore
-      .getState()
-      .updateConversation(conversation);
+  update(conversation: Conversation) {
+    useConversationStore.getState().updateConversation(conversation);
   }
 
   /**
    * انتخاب Conversation
    */
-  select(
-    conversation: Conversation | null
-  ) {
-    useConversationStore
-      .getState()
-      .setSelectedConversation(
-        conversation
-      );
+  select(conversation: Conversation | null) {
+    useConversationStore.getState().setSelectedConversation(conversation);
   }
 
   /**
@@ -130,11 +100,8 @@ class ConversationService {
    * هنگام Logout استفاده می‌شود.
    */
   clear() {
-    useConversationStore
-      .getState()
-      .clear();
+    useConversationStore.getState().clear();
   }
 }
 
-export const conversationService =
-  new ConversationService();
+export const conversationService = new ConversationService();

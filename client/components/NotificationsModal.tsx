@@ -3,11 +3,12 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet, Switch , Linking  } fr
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 //import { Colors } from "@/constants/Colors";
-import { api } from "@/context/AppContext";
+import { api } from "@/services/api/api";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/Notification.styles";
 import { useRouter } from "expo-router";
+import { feedback } from "@/services/feedback";
 
 interface Props {
   visible: boolean;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function NotificationsModal() {
+
   const [enabled, setEnabled] = useState(false);
   const router = useRouter();
   const {colors} = useTheme();
@@ -45,9 +47,28 @@ export default function NotificationsModal() {
     } else {
       // iOS/Android اجازه نمی‌دن از داخل اپ پرمیشن رو Off کنی؛ باید کاربر رو به تنظیمات سیستم هدایت کرد
       setEnabled(false);
-      Linking?.openSettings?.();
+      //Linking?.openSettings?.();
     }
   };
+
+  const sendNotifHere = () => {
+    
+// Second, call scheduleNotificationAsync()
+if(enabled){
+
+
+Notifications.scheduleNotificationAsync({
+  content: {
+    title: 'Look at that notification',
+    body: "I'm so proud of myself!",
+  },
+  trigger: null,
+});
+} else {
+  console.log('not enable to send notif')
+  //Linking?.openSettings?.();
+}
+  }
 
   return (
     <SafeAreaView edges={["top"]}  style={[styles.container, { backgroundColor: colors.surface }]} >
@@ -69,6 +90,12 @@ export default function NotificationsModal() {
           <Switch value={enabled} onValueChange={handleToggle} />
         </View>
       {/* </View> */}
+     {/* <TouchableOpacity onPress={() => sendNotifHere()}>
+
+      <Text>
+        Send notif
+      </Text>
+    </TouchableOpacity>  */}
       </SafeAreaView>
     
   );

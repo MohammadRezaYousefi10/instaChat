@@ -13,19 +13,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { TextInput } from "react-native-gesture-handler";
 import Avatar from "@/components/Avatar";
-import { api, useApp } from "@/context/AppContext";
+import {  useApp } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/SearchScreen.styles";
 import ContactsModal from "@/components/ContactsModal";
 import { useStartChat } from "@/services/useStartChat";
 import ContactsGate from "@/components/ContactsGate";
+import { api } from "@/services/api/api";
 
 export default function search() {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const {setConversations , setSelectedConversation} = useApp();
   const {colors } = useTheme();
   const styles = getStyles(colors);
   const [showContacts, setShowContacts] = useState(false);

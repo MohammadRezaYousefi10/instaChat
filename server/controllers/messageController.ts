@@ -2,7 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.js";
 import Conversation from "../models/Conversation.js";
 import cloudinary from "../config/cloudnairy.js";
-import Message from "../models/Message.js";
+import Message, { IMessage } from "../models/Message.js";
 import { Readable } from "stream";
 import { handleConversationEvent } from "../socket/socketManager.js";
 import { onlineUsers } from "../socket/socketManager.js";
@@ -86,16 +86,14 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 // Send a message
 export const sendMessage = async (req: AuthRequest, res: Response) => {
   const senderId = req.user!.id;
-  const { receiverId, conversationId, text, clientId } = req.body;
+  const { receiverId, conversationId, text, clientId, replyToId } = req.body;
   const file = req.file;
 
   if ((!receiverId && !conversationId) || (!text?.trim() && !file)) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        message: "receiverId/conversationId and (text or file) are required",
-      });
+    res.status(400).json({
+      success: false,
+      message: "receiverId/conversationId and (text or file) are required",
+    });
     return;
   }
   let mediaUrl = "";
@@ -149,6 +147,33 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     res.status(404).json({ success: false, message: "Conversation not found" });
     return;
   }
+
+  let replyTo: IMessage["replyTo"] | undefined;
+  if (replyToId) {
+    const original = await Message.findById(replyToId).select(
+      "_id sender text mediaType",
+    );
+
+    /* if (replyToId && !replyTo) {
+      return res.status(404).json({
+        success: false,
+
+        message: "Reply message not found",
+      });
+    } */
+
+    if (original) {
+      replyTo = {
+        _id: original._id,
+
+        sender: original.sender,
+
+        text: original.text,
+
+        mediaType: original.mediaType,
+      };
+    }
+  }
   const message = await Message.create({
     sender: senderId,
     receiver:
@@ -159,24 +184,23 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     mediaUrl: mediaUrl || undefined,
     mediaType,
     clientId,
+    replyTo,
   });
 
-
-
   const savedMessage = await Message.findById(message._id).lean();
-    if(!savedMessage) return;
-    
-    const payload = JSON.stringify({
-        type: SocketEventType.MESSAGE_ACK,
-        clientId,
-        messageId: savedMessage._id,
-        createdAt: savedMessage.createdAt,
-      });
-      console.log('sending paylod to MESSAGE_ACK' , payload)
-    onlineUsers.forEach((ws , id) => {
+  if (!savedMessage) return;
+
+  const payload = JSON.stringify({
+    type: SocketEventType.MESSAGE_ACK,
+    clientId,
+    messageId: savedMessage._id,
+    createdAt: savedMessage.createdAt,
+  });
+  console.log("sending paylod to MESSAGE_ACK", payload);
+  onlineUsers.forEach((ws, id) => {
     //if(id === receiverId) return;
-    console.log('id ' , id)
-    console.log('receiverId ' , receiverId)
+    console.log("id ", id);
+    console.log("receiverId ", receiverId);
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(payload);
     }
@@ -196,19 +220,57 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
 // Get all messages in a conversation
 export const getMessages = async (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
-  const { conversationId } = req.params;
+  try {
+    const userId = req.user!.id;
+    const { conversationId } = req.params;
 
-  const conversation = await Conversation.findOne({
-    _id: conversationId,
-    participants: { $in: [userId] },
-  });
-  if (!conversation) {
-    res.status(404).json({ success: false, message: "Conversation not found" });
-    return;
-  }
 
-  const Messages = await Message.find({ conversationId }).sort({
+
+    console.log('userId ' , userId)
+    console.log('conversationId' , conversationId)
+    console.log('req.query.limit' , req.query.limit)
+    console.log('req.query.before' , req.query.before)
+
+    const limit = Math.min(Number(req.query.limit) || 30, 50);
+
+    const before = req.query.before as string | undefined;
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: { $in: [userId] },
+    });
+    if (!conversation) {
+      res
+        .status(404)
+        .json({ success: false, message: "Conversation not found" });
+      return;
+    }
+
+    const query: any = {
+      conversationId,
+    };
+
+    if (before) {
+      const beforeMessage = await Message.findOne({
+        _id: before,
+        conversationId,
+      });
+
+      if (!beforeMessage) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid cursor",
+        });
+
+        return;
+      }
+
+      query.createdAt = {
+        $lt: beforeMessage.createdAt,
+      };
+    }
+
+    /*  const Messages = await Message.find({ conversationId }).sort({
     createdAt: 1,
   });
   await Message.updateMany(
@@ -216,7 +278,38 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
     { read: true },
   );
 
-  res.json({ success: true, Messages });
+  res.json({ success: true, Messages }); */
+    const messages = await Message.find(query)
+      .sort({
+        createdAt: -1,
+        _id: -1,
+      })
+      .limit(limit + 1)
+      .lean();
+
+    await Message.updateMany(
+      { conversationId, receiver: userId, read: false },
+      { read: true },
+    );
+
+    const hasMore = messages.length > limit;
+
+    if (hasMore) {
+      messages.pop();
+    }
+
+    messages.reverse();
+
+    res.status(200).json({ success: true, messages, hasMore });
+  } catch (error) {
+    //console.error("getMessages error:", error);
+
+    res.status(500).json({
+      success: false,
+
+      message: "Failed to fetch messages",
+    });
+  }
 };
 
 // Delete a conversation
@@ -238,12 +331,10 @@ export const deleteConversation = async (req: AuthRequest, res: Response) => {
       (p) => String(p) === userId,
     );
     if (!isParticipant) {
-      res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to delete this conversation",
-        });
+      res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this conversation",
+      });
       return;
     }
     // notify other participants before deleting

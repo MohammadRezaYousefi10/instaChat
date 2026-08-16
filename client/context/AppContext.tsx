@@ -1,9 +1,4 @@
-import {
-  AuthState,
-  Conversation,
-  User,
-  UserStory,
-} from "@/types";
+import { AuthState, Conversation, User, UserStory } from "@/types";
 import React, {
   createContext,
   ReactNode,
@@ -15,14 +10,12 @@ import React, {
 } from "react";
 import { WS_URL } from "@/constants/config";
 import { useAuth, useUser } from "@clerk/expo";
-import { useMessageStore } from "@/store/messageStore";
-import { useConversationStore } from "@/store/conversationStore";
+import { useMessageStore } from "@/store/chat/message.store";
+import { useConversationStore, usePendingStore } from "@/store";
 import { SocketProvider } from "@/providers/SocketProvider";
 import { retryManager } from "@/services/socket/retry.manager";
-import { usePendingStore } from "@/store/pendingStore";
 import { socketService } from "@/services/socket";
 import { api } from "@/services/api/api";
-
 
 const _tokenRef = { current: null as string | null };
 
@@ -30,24 +23,24 @@ interface AppContextType {
   auth: AuthState;
   logout: () => Promise<void>;
   updateUser: (user: User) => Promise<void>;
-  users: User[];
-  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  //users: User[];
+  //setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 
-  userStories: UserStory[];
-  setUserStories: React.Dispatch<React.SetStateAction<UserStory[]>>;
+  //userStories: UserStory[];
+  //setUserStories: React.Dispatch<React.SetStateAction<UserStory[]>>;
 
-  conversations: Conversation[];
+  //conversations: Conversation[];
   //setConversations : React.Dispatch<React.SetStateAction<Conversation[]>>
-  setConversations: (items: Conversation[]) => void;
+  //setConversations: (items: Conversation[]) => void;
   //selectedConversation: Conversation | null;
   //setSelectedConversation: (c: Conversation | null) => void
 
-  setSelectedConversation: (conversation: Conversation | null) => void;
+  //setSelectedConversation: (conversation: Conversation | null) => void;
 
   //messages: Message[];
   //setMessages : React.Dispatch<React.SetStateAction<Message[]>>
 
-  fetchStories: () => Promise<void>;
+  //fetchStories: () => Promise<void>;
   //typingUsers: Record<string , boolean>;
   //sendWsEvent: (data : object) => void;
 }
@@ -60,13 +53,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     user: null,
     loading: true,
   });
-  const [users, setUsers] = useState<User[]>([]);
+  //const [users, setUsers] = useState<User[]>([]);
 
   const { getToken, isLoaded: authLoaded, isSignedIn, signOut } = useAuth();
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
 
   //const [conversations , setConversations] = useState<Conversation[]>([])
-  const conversations = useConversationStore((state) => state.conversations);
+  //const conversations = useConversationStore((state) => state.conversations);
 
   const setConversations = useConversationStore(
     (state) => state.setConversations,
@@ -180,7 +173,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuth((prev) => ({ ...prev, user }));
   }, []);
 
-  const fetchStories = useCallback(async () => {
+  /* const fetchStories = useCallback(async () => {
     try {
       const { data } = await api.get("/api/stories");
       if (data.success) setUserStories(data.stories);
@@ -189,7 +182,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         fetchStories();
       }, 1000);
     }
-  }, []);
+  }, []); */
 
   /* const sendWsEvent = useCallback( (data:object) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -205,17 +198,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         auth,
         logout,
         updateUser,
-        users,
-        setUsers,
-        conversations,
-        setConversations,
+        //users,
+        //setUsers,
+        //conversations,
+        //setConversations,
         //selectedConversation,
-        setSelectedConversation,
+        //setSelectedConversation,
         //messages,
         //setMessages,
-        userStories,
-        setUserStories,
-        fetchStories,
+        //userStories,
+        //setUserStories,
+        //fetchStories,
         //typingUsers,
         //sendWsEvent
       }}

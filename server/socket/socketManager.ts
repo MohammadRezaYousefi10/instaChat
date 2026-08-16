@@ -52,10 +52,12 @@ export function initSocketServer(server : any ) {
                 if(msg.type === SocketEventType.MESSAGE){
                     const {receiverId , conversationId , payload} = msg;
                     console.log('message received ' , msg)
+                    console.log('receiverId' , receiverId)
+                    console.log('conversationId' , conversationId)
                     if(conversationId){
                         // Direct message with conversationId
                         handleConversationEvent(userId , conversationId , {type:SocketEventType.MESSAGE , payload})
-
+                        
                     }else if(receiverId) {
                         // Legacy direct message
                         const receiverWs = onlineUsers.get(receiverId);

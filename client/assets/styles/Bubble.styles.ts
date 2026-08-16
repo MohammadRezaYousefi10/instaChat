@@ -19,6 +19,7 @@ export const getStyles = (colors: ColorPalette) =>
         borderRadius: 20,
         borderBottomLeftRadius: 4,
         backgroundColor: colors.surface
+        
         // backgroundColor: "#f0f0f0",
     },
     senderName: {

@@ -6,7 +6,6 @@ import { useTheme } from "@/context/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { getStyles } from "@/assets/styles/Settings.styles";
-import AppBottomSheet from "./AppBottomSheet";
 
 
 interface Props {

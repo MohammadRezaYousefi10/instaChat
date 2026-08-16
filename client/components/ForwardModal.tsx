@@ -1,45 +1,38 @@
 // client/components/ForwardModal.tsx
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
-  Modal,
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   TextInput,
   Image,
   Dimensions,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { api, useApp } from "@/context/AppContext";
-import { Conversation, Message } from "@/types";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
+import {  useApp } from "@/context/AppContext";
+import { Conversation } from "@/types";
 // import { Colors } from "@/constants/Colors";
 import { feedback } from "@/services/feedback";
 import { useTheme } from "@/context/ThemeContext";
 import { getForwardStyles } from "@/assets/styles/ForwardModal.styles";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { BottomSheetModal, BottomSheetView } from "@gorhom/bottom-sheet";
 import AppBottomSheet from "./AppBottomSheet";
 import { toast } from "./Toast";
-import { LinearGradient } from "expo-linear-gradient";
 import { sendMessage } from "@/services/chats/sendMessage";
 import * as Crypto from 'expo-crypto';
+import { api } from "@/services/api/api";
+import { useSocket } from "@/providers/SocketProvider";
+import { useConversationStore } from "@/store";
 
 
 const { width } = Dimensions.get("window");
 const NUM_COLUMNS = 4;
-const ITEM_SIZE = width / NUM_COLUMNS;
-const AVATAR_SIZE = 62;
+//const ITEM_SIZE = width / NUM_COLUMNS;
+//const AVATAR_SIZE = 62;
 
 interface Props {
   visible: boolean;
@@ -48,8 +41,10 @@ interface Props {
 }
 
 export default function ForwardModal({ visible, imageUri, onClose }: Props) {
-  const { conversations, setConversations, sendWsEvent } = useApp(); // فرض: آرایه‌ای از {_id, participant:{name, avatar}}
+  //const {  setConversations } = useApp(); // فرض: آرایه‌ای از {_id, participant:{name, avatar}}
+  const conversationStore = useConversationStore.getState();
 
+  const {sendWsEvent} = useSocket();
   const { colors } = useTheme();
   const styles = getForwardStyles(colors);
   const [query, setQuery] = useState("");
@@ -59,7 +54,7 @@ export default function ForwardModal({ visible, imageUri, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [modalGoUp, setModalGoUp] = useState("55%");
 
-  const list: Conversation[] = conversations ?? [];
+  const list: Conversation[] = conversationStore.conversations ?? [];
 
   const fetchConversation = () => {
     setLoading(true);
@@ -68,7 +63,7 @@ export default function ForwardModal({ visible, imageUri, onClose }: Props) {
         "/api/messages/conversations",
       )
       .then(({ data }) => {
-        if (data.success) setConversations(data.conversations);
+        if (data.success) conversationStore.setConversations(data.conversations);
         setLoading(false);
       })
       .catch(() => {

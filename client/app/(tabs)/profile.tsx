@@ -13,7 +13,8 @@ import Avatar from "@/components/Avatar";
 import { TextInput } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import { api, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
+import { api } from "@/services/api/api";
 
 import { Animated } from "react-native";
 import ImageViewerModal from "@/components/ImageViewerModal";

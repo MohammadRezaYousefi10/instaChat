@@ -5,23 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  Dimensions,
   Alert,
   ActivityIndicator,
-  Share,
 } from "react-native";
 //import ImageView from "react-native-image-viewing";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as MediaLibrary from "expo-media-library";
-import { Colors } from "@/constants/Colors";
 // for SDK 56
 //import * as FileSystem from "expo-file-system";
 // for SDK 54
 import * as FileSystem from "expo-file-system/legacy";
 import { useTheme } from "@/context/ThemeContext";
-import { toast } from "./Toast";
-import { getStyles } from "@/assets/styles/ImageViewerMoadl.styles";
 
 
 

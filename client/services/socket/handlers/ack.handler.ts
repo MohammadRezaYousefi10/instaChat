@@ -1,18 +1,18 @@
 import { MessageAckEvent } from "../socket.types";
 
-import { useMessageStore } from "@/store/messageStore";
+import { useMessageStore , usePendingStore , useReplyStore} from "@/store";
 
-import { usePendingStore } from "@/store/pendingStore";
+
 
 export function handleAckEvent(event: MessageAckEvent) {
-    console.log('handleAckEvent' , event)
-  usePendingStore.getState().remove(event.clientId);
+  console.log("handleAckEvent", event);
 
-  useMessageStore.getState().confirmMessage(event.clientId,
-    {
-        _id: event.messageId,
-        status: "sent",
-        createdAt: event.createdAt,
-      },
-    );
+  usePendingStore.getState().remove(event.clientId);
+  useReplyStore.getState().clearReply();
+
+  useMessageStore.getState().confirmMessage(event.clientId, {
+    _id: event.messageId,
+    status: "sent",
+    createdAt: event.createdAt,
+  });
 }

@@ -1,10 +1,6 @@
 import { create } from "zustand";
+import type { TypingState } from "../types";
 
-export interface TypingState {
-  [conversationId: string]: {
-    [userId: string]: boolean;
-  };
-}
 
 interface TypingStore {
   typing: TypingState;

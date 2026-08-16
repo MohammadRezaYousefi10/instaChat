@@ -19,7 +19,7 @@ import {
   useAudioRecorderState,
 } from "expo-audio";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   SafeAreaView,
@@ -32,7 +32,6 @@ import Bubble from "@/components/Bubble";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useApp } from "@/context/AppContext";
-import { Message } from "@/types";
 import { feedback } from "@/services/feedback";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/ChatScreen.styles";
@@ -41,19 +40,29 @@ import { getStyles } from "@/assets/styles/ChatScreen.styles";
 import { useChat } from "@/hooks/useSendMessage";
 //import { useSendMessage } from "@/hooks/useSendMessage";
 import * as Crypto from "expo-crypto";
-import { useMessageStore } from "@/store/messageStore";
-import { useConversationStore } from "@/store/conversationStore";
 import { conversationService } from "@/services/chats/conversation.service";
 import { usePresence } from "@/hooks/usePresence";
-import { usePresenceStore } from "@/store/presenceStore";
 import { useTyping } from "@/hooks/useTyping";
-import { useTypingStore } from "@/store/typingStore";
+import {
+  useTypingStore,
+  useHighlightStore,
+  useMessageStore,
+  useConversationStore,
+  useReplyStore,
+  useChatScrollStore,
+  usePresenceStore,
+} from "@/store";
 import { SocketEventType } from "@/services/socket/socket.events";
-import { socketService } from "@/services/socket";
 import { useSocket } from "@/providers/SocketProvider";
 import { api } from "@/services/api/api";
-import { usePendingMessages } from "@/hooks/usePendingStore";
-import { PendingMessage } from "@/store/pendingStore";
+import AppMessageActionSheet from "@/components/message-actions/AppMessageActionSheet";
+import ReplyPreview from "@/components/chat/ReplyPreview";
+
+import { Message } from "@/types";
+import { messageNavigator } from "@/services/navigation/navigator";
+import { chatService } from "@/services/chats/chat.service";
+import { useMessagePagination } from "@/hooks/useMessagePagination";
+import { findMessageIndex } from "@/services/navigation/messageNavigator";
 
 export default function chatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -62,11 +71,11 @@ export default function chatScreen() {
   let {
     auth,
     //messages,
-    users,
+    //users,
     //selectedConversation,
-    setSelectedConversation,
+    //setSelectedConversation,
     //typingUsers,
-    setConversations,
+    //setConversations,
     //setMessages,
     //sendWsEvent,
   } = useApp();
@@ -79,13 +88,30 @@ export default function chatScreen() {
   const { sendWsEvent } = useSocket();
 
   const conversationStore = useConversationStore.getState();
+  /* const conversation =
+  useConversationStore(
+    state =>
+      state.conversations.find(
+        c =>
+          c._id === conversationId
+      )
+  ); */
 
   const { messages, send } = useChat(selectedConversation!._id);
-  const { setMessages, addMessage, getConversationMessages } =
-    useMessageStore();
+
+  //const { setMessages, addMessage, getConversationMessages } = useMessageStore();
+
+  const store = useMessageStore.getState();
+  //const loadMore = useMessagePagination(selectedConversation!._id).loadMore;
+  const { loadMore } = useMessagePagination(id);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
 
   const { colors } = useTheme();
   const styles = getStyles(colors);
+
+  const { targetMessageId, clearTarget } = useChatScrollStore();
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -94,7 +120,19 @@ export default function chatScreen() {
   const [mediaName, setMediaName] = useState<string>("media.jpg");
   const [mediaUri, setMediaUri] = useState<string | null>(null);
 
-  const flatListRef = useRef<FlatList>(null);
+  //const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<Message>>(null);
+  useEffect(() => {
+    if (!flatListRef.current) {
+      return;
+    }
+
+    messageNavigator.register(flatListRef.current);
+
+    return () => {
+      messageNavigator.unregister();
+    };
+  }, []);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const partner = selectedConversation?.participant;
@@ -102,6 +140,11 @@ export default function chatScreen() {
   if (!partner) return;
 
   const presence = usePresence(partner._id);
+  const isOnline = usePresenceStore(
+    (state) => state.presence[partner._id]?.online ?? false,
+  );
+  console.log("isOnline : ", isOnline);
+
   /* console.log('presence' , presence)
   console.log('presence' , presence.online)
   console.log('user' , partner.name)
@@ -109,40 +152,113 @@ export default function chatScreen() {
 
   // Load messages for this conversation
   useEffect(() => {
-    // setMessages(id , messages)
-
-    console.log("hello", id);
+    console.log("fetching...");
     if (!id) return router.back();
     setLoading(true);
-    const fetchMessages = () => {
-      // setMessages(id , messages)
-      api
-        .get(`/api/messages/conversations/${id}/messages`)
-        .then(({ data }) => {
-          if (data.success) {
-            //console.log("Messages : " , data.Messages)
-            setMessages(id, data.Messages);
-            setLoading(false);
-          }
-        })
-        .catch(() => {
-          setTimeout(fetchMessages, 1000);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+    const fetchMessages = async () => {
+      try {
+        const result = await chatService.fetchMessages(id, { limit: 30 });
+        //const messages = [...result.messages].reverse();
+        store.setMessages(id, result.messages);
+        setLoading(false);
+      } catch (err) {
+        console.log(err);
+        setTimeout(fetchMessages, 1000);
+      }
     };
     fetchMessages();
   }, [id]);
-  // scroll bottom when messages update
+
+  useEffect(() => {
+    if (!targetMessageId) return;
+
+    const index = messages.findIndex((m) => m._id === targetMessageId);
+
+    if (index === -1) return;
+
+    flatListRef.current?.scrollToIndex({
+      index,
+
+      animated: true,
+    });
+    useHighlightStore.getState().highlight(targetMessageId);
+    clearTarget();
+  }, [targetMessageId]);
+
+  const ref = useRef<View>(null);
+  const messageRefs = useRef(new Map<string, View>());
+
   /* useEffect(() => {
-       if (messages.length > 0) {
-      setTimeout(
-        () => flatListRef.current?.scrollToEnd({ animated: true }),
-        500,
-      );
+    if (flatListRef.current) {
+      chatScrollService.register(flatListRef.current);
     }
-  }, [messages]);  */
+  }, []); */
+  const scrollToMessage = useCallback(
+    (index: number) => {
+      const message = useMessageStore.getState().messages[id!]?.[index];
+
+      if (!message) {
+        return;
+      }
+
+      setHighlightedMessageId(message._id);
+
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToIndex({
+          index,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      });
+
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 1500);
+    },
+    [id],
+  );
+
+  const jumpToReply = useCallback(
+    async (messageId: string) => {
+      if (!id) {
+        return;
+      }
+
+      while (true) {
+        const store = useMessageStore.getState();
+
+        const messages = store.messages[id] ?? [];
+
+        const index = messages.findIndex(
+          (message) =>
+            message._id === messageId || message.clientId === messageId,
+        );
+
+        // پیدا شد
+        if (index !== -1) {
+          scrollToMessage(index);
+
+          return;
+        }
+
+        const pagination = store.pagination[id];
+
+        // چیزی برای Load کردن نیست
+        if (pagination?.loading || pagination?.hasMore === false) {
+          console.log("Reply message not found");
+
+          return;
+        }
+
+        const loaded = await loadMore();
+
+        if (!loaded) {
+          return;
+        }
+      }
+    },
+    [id, loadMore, scrollToMessage],
+  );
 
   function deletChat() {
     const msg = `Delete this chat? This cannot be undone.`;
@@ -171,6 +287,12 @@ export default function chatScreen() {
     ]);
   }
 
+  const pagination = useMessageStore((state) =>
+    selectedConversation._id
+      ? state.pagination[selectedConversation._id]
+      : undefined,
+  );
+
   const pickMedia = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -196,9 +318,9 @@ export default function chatScreen() {
     //if ((!text.trim() && !mediaUri) || !selectedConversation) return;
     if ((!text.trim() && !mediaUri) || !partner || !user) return;
     setSending(true);
-    //const myText = text;
     try {
       const clientId = Crypto.randomUUID();
+      const replyMessage = useReplyStore.getState().message;
 
       const message = await send({
         senderId: user._id,
@@ -210,16 +332,13 @@ export default function chatScreen() {
         mediaName,
         clientId,
         status: "pending",
+        replyToId: replyMessage?._id,
       });
       //setText("");
 
-    setText("");
-
-      setMediaUri(null);
-
-
       if (message) {
-        console.log("sending web socket");
+        console.log("sending web socket", message);
+        console.log("selectedConversation ", selectedConversation);
         /* sendWsEvent({
     type: "message",
     receiverId: partner._id,
@@ -235,8 +354,10 @@ export default function chatScreen() {
 
         //setMessages(selectedConversation._id, messages);
         //addMessage(selectedConversation._id, message);
+
         conversationStore.updateLastMessage(selectedConversation._id, message);
 
+        //useMessageStore.getState().updateMessage(selectedConversation._id, message)
         //setText("");
         //setMediaUri(null);
         feedback.success();
@@ -269,6 +390,10 @@ export default function chatScreen() {
         setMediaUri(null)
       }
       feedback.success() */
+
+      setText("");
+
+      setMediaUri(null);
     } catch (err: any) {
       Alert.alert(
         "Error",
@@ -464,6 +589,10 @@ useEffect(() => {
 
   const isPartnerTyping = typingUsers[partner._id] === true;
   //console.log("isPartnerTyping", isPartnerTyping);
+  const isTyping = useTypingStore(
+    (state) => state.typing[partner._id] ?? false,
+  );
+  console.log("isTyping ", isTyping);
 
   if (!selectedConversation) {
     return (
@@ -486,9 +615,9 @@ useEffect(() => {
   const headerName = partner!.name;
   const headerAvatar = partner!.avatar;
   const headerSub =
-    presence!.online || partner!.isOnline
+    isOnline || partner!.isOnline
       ? "Online"
-      : presence?.lastSeen || partner!.lastSeen
+      : partner!.lastSeen
         ? `Last seen ${formatTime(partner.lastSeen)}`
         : "Offline";
 
@@ -500,7 +629,6 @@ useEffect(() => {
         // keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         {/* header */}
-
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -513,7 +641,7 @@ useEffect(() => {
             name={headerName}
             src={headerAvatar}
             size={38}
-            online={presence?.online}
+            online={isOnline}
           />
 
           <View style={styles.headerInfo}>
@@ -522,10 +650,7 @@ useEffect(() => {
             </Text>
             <Text style={styles.headerHandle}>@{partner?.handle}</Text>
             <Text
-              style={[
-                styles.headerSub,
-                presence?.online && { color: colors.online },
-              ]}
+              style={[styles.headerSub, isOnline && { color: colors.online }]}
             >
               {headerSub}
             </Text>
@@ -555,34 +680,83 @@ useEffect(() => {
             </TouchableOpacity>
           </View>
         </View>
-
         {/* main */}
-
         {/* Messages */}
+        {pagination?.loading && (
+          <ActivityIndicator
+            color={colors.primary}
+            style={{
+              marginVertical: 8,
+            }}
+          />
+        )}
         {loading ? (
           <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />
         ) : (
           <FlatList
             data={messages}
             ref={flatListRef}
+            /* onScrollToIndexFailed={(info) => {
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({
+                  index: info.index,
+
+                  animated: true,
+                });
+              }, 300);
+            }} */
+            onScrollToIndexFailed={(info) => {
+              const wait = Math.min(100 + info.averageItemLength * 2, 500);
+
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({
+                  index: info.index,
+                  animated: true,
+                  viewPosition: 0.5,
+                });
+              }, wait);
+            }}
             keyExtractor={(m) => m._id}
             contentContainerStyle={styles.messageList}
+            inverted
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.2}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 1,
+            }}
             renderItem={({ item: msg, index }) => {
               const isMine = msg.sender === auth.user?._id;
               const prev = messages[index - 1];
+              // const next = messages[index + 1];
+
               const showGap = !prev || prev.sender !== msg.sender;
+              //const showGap = !prev || prev.sender !== msg.sender;
+
+              const isHighlighted = highlightedMessageId === msg._id;
+
               return (
-                <View style={showGap && index > 0 ? { marginTop: 10 } : {}}>
-                  <Bubble msg={msg} isMine={isMine} />
+                <View
+                  style={[
+                    showGap && index > 0 ? { marginTop: 10 } : undefined,
+                    isHighlighted && {
+                      borderRadius: 12,
+                      opacity: 0.7,
+                    },
+                  ]}
+                >
+                  <Bubble
+                    msg={msg}
+                    isMine={isMine}
+                    onJumpToReply={msg.replyTo?._id ? jumpToReply : undefined}
+                  />
                 </View>
               );
             }}
-            onContentSizeChange={() =>
+            /* onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
-            }
+            } */
           />
         )}
-
         {/* typing indicator */}
         {/* {typingEntries.length > 0 && (
           <View style={styles.typingRow}>
@@ -596,8 +770,7 @@ useEffect(() => {
             })}
           </View>
         )}  */}
-
-        {isPartnerTyping && (
+        {isTyping && (
           <View style={styles.typingRow}>
             return (
             <Text style={styles.typingText}>
@@ -606,7 +779,6 @@ useEffect(() => {
             );
           </View>
         )}
-
         {/*  <Text>
     {presence.online
         ? "Online"
@@ -614,8 +786,14 @@ useEffect(() => {
 
         
 </Text>   */}
-
         {/* input bar */}
+        <ReplyPreview
+          onPress={() => {
+            if (useReplyStore.getState().message?._id) {
+              jumpToReply(useReplyStore.getState().message!._id);
+            }
+          }}
+        />
         <View style={styles.inputBar}>
           {!recorderState.isRecording && (
             <TouchableOpacity style={styles.attachBtn} onPress={pickMedia}>
@@ -725,6 +903,7 @@ useEffect(() => {
             </>
           )}
         </View>
+        <AppMessageActionSheet />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

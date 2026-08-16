@@ -1,25 +1,14 @@
-import {
-  Redirect,
-  SplashScreen,
-  Stack,
-  useRouter,
-  useSegments,
-} from "expo-router";
+import { router, SplashScreen, Stack, useRouter, useSegments } from "expo-router";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ClerkLoaded, ClerkProvider, useAuth, useSignIn } from "@clerk/expo";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { ActivityIndicator, View } from "react-native";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { AppProvider } from "@/context/AppContext";
 import * as Notifications from "expo-notifications";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
-import SettingsModal from "@/components/SettingsModal";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import ToastHost from "@/components/Toast";
-import { SocketProvider } from "@/providers/SocketProvider";
-import { WS_URL } from "@/constants/config";
-
-
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,7 +17,6 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 if (!publishableKey) {
   throw new Error("Add your Clerk publishable key to the .env file");
 }
-
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -42,11 +30,10 @@ Notifications.setNotificationHandler({
 
 
 function AuthGuard() {
-
   const { colors } = useTheme();
-  
+
   /* const {isLoaded , isSignedIn } = useAuth(); */
-  const {isLoaded , isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -55,20 +42,17 @@ function AuthGuard() {
     SplashScreen.hideAsync();
     const inAuth = segments[0] === "(auth)";
 
-
-
     if (!isSignedIn && !inAuth) {
       router.replace("/(auth)");
-    } else if (isSignedIn && inAuth) { 
+    } else if (isSignedIn && inAuth) {
       router.replace("/(tabs)");
 
       (async () => {
-      const { status: existing } = await Notifications.getPermissionsAsync();
-      if (existing !== "granted") {
-        await Notifications.requestPermissionsAsync();
-      }
-    })();
-
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        if (existing !== "granted") {
+          await Notifications.requestPermissionsAsync();
+        }
+      })();
     }
   }, [isSignedIn, isLoaded, segments]);
 
@@ -90,42 +74,40 @@ function AuthGuard() {
 }
 
 export default function RootLayout() {
-
-
-  return <ThemeProvider>
-   <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ClerkLoaded>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+  return (
+    <ThemeProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <ClerkLoaded>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <BottomSheetModalProvider>
-          <AppProvider>          
-              
-            <AuthGuard />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="chat/[id]"
-                options={{ animation: "slide_from_right" }}
-              />
-              <Stack.Screen
-              name="settings"
-              options={{ animation: "slide_from_right" }}
-            />
-              <Stack.Screen
-              name="notification"
-              options={{ animation: "slide_from_right" }}
-            />
-              <Stack.Screen
-              name="privacy"
-              options={{ animation: "slide_from_right" }}
-            />
-            </Stack>
-          </AppProvider>
-         <ToastHost />
-         </BottomSheetModalProvider>
-        </GestureHandlerRootView>
-      </ClerkLoaded>
-    </ClerkProvider>
-          </ThemeProvider>
-  
+              <AppProvider>
+                <AuthGuard />
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen
+                    name="chat/[id]"
+                    options={{ animation: "slide_from_right" }}
+                  />
+                  <Stack.Screen
+                    name="settings"
+                    options={{ animation: "slide_from_right" }}
+                  />
+                  <Stack.Screen
+                    name="notification"
+                    options={{ animation: "slide_from_right" }}
+                  />
+                  <Stack.Screen
+                    name="privacy"
+                    options={{ animation: "slide_from_right" }}
+                  />
+                </Stack>
+              </AppProvider>
+              <ToastHost />
+            </BottomSheetModalProvider>
+          </GestureHandlerRootView>
+        </ClerkLoaded>
+      </ClerkProvider>
+    </ThemeProvider>
+  );
 }

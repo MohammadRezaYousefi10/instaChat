@@ -4,7 +4,7 @@ import { ColorPalette } from "@/constants/Colors";
 export const getStyles = (colors: ColorPalette) =>
   StyleSheet.create({
     overlay: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       justifyContent: "center",
       alignItems: "center",
       zIndex: 999,

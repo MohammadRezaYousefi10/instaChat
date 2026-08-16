@@ -1,21 +1,13 @@
 import { TypingEvent } from "../socket.types";
 
-import { useTypingStore } from "@/store/typingStore";
+import { useTypingStore } from "@/store";
 
-export function handleTypingEvent(
-    event: TypingEvent
-) {
+export function handleTypingEvent(event: TypingEvent) {
+  useTypingStore.getState().setTyping(
+    event.conversationId,
 
-    useTypingStore
-        .getState()
-        .setTyping(
+    event.senderId,
 
-            event.conversationId,
-
-            event.senderId,
-
-            event.isTyping
-
-        );
-
+    event.isTyping,
+  );
 }

@@ -16,9 +16,10 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
 // import { Colors } from "@/constants/Colors";
 import Avatar from "@/components/Avatar";
-import { api, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getStyles } from "@/assets/styles/Map.styles";
+import { api } from "@/services/api/api";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL;
@@ -38,7 +39,7 @@ export default function MapScreen() {
 
   const router = useRouter();
   const { getToken } = useAuth();
-  const { auth , updateUser } = useApp();
+  const { auth  } = useApp();
   
   const user = auth?.user;
 

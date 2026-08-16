@@ -1,8 +1,7 @@
 import { socketService } from "./socket.service";
-import { usePendingStore } from "@/store/pendingStore";
+import { usePendingStore } from "@/store";
 import { MAX_MESSAGE_AGE, MAX_RETRY } from "./retry.constants";
 import { chatService } from "@/services/chats/chat.service";
-import { useMessageStore } from "@/store/messageStore";
 import { Message } from "@/types";
 import { SocketConnectionStatus } from "./socket.connection";
 

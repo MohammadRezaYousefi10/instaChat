@@ -14,7 +14,7 @@ import {
   SOCKET_RECONNECT_INITIAL_DELAY,
   SOCKET_RECONNECT_MAX_DELAY,
 } from "@/services/socket";
-import { useConnectionStore } from "@/store/connectionStore";
+import { useConnectionStore } from "@/store";
 import { dispatchSocketEvent } from "@/services/socket/socket.dispatcher";
 import { SocketConnectionStatus } from "@/services/socket/socket.connection";
 import { retryManager } from "@/services/socket/retry.manager";
@@ -83,7 +83,7 @@ export function SocketProvider({
       }
     };
 
- /*    const scheduleReconnect = () => {
+    /*    const scheduleReconnect = () => {
       if (!mounted.current || cancelled) return;
 
       if (reconnectTimeout.current) return;
@@ -136,7 +136,7 @@ export function SocketProvider({
 
         case SocketConnectionStatus.DISCONNECTED:
           retryManager.stop();
-          const token = await getToken()
+          const token = await getToken();
           socketService.reconnect(`${wsUrl}/ws?token=${token}`);
 
           break;

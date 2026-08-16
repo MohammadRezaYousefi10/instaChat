@@ -1,8 +1,5 @@
-import { useConnectionStore }
-from "@/store/connectionStore";
+import { useConnectionStore } from "@/store";
 
-export function useConnection(){
-
-    return useConnectionStore();
-
+export function useConnection() {
+  return useConnectionStore();
 }

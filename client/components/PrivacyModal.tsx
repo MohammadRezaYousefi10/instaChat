@@ -4,7 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { api, useApp } from "@/context/AppContext";
+import {  useApp } from "@/context/AppContext";
+import {api} from "@/services/api/api"
 import { useTheme } from "@/context/ThemeContext";
 import PrivacyOptionSheet, { PrivacyLevel } from "@/components/PrivacyOptionSheet";
 import { toast } from "@/components/Toast";

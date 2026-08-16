@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Conversation, Message, User } from "@/types";
+import type { Conversation, Message, User } from "@/types";
 
 interface ConversationStore {
   conversations: Conversation[];
@@ -110,7 +110,6 @@ export const useConversationStore = create<ConversationStore>((set) => ({
           new Date(b.updatedAt).getTime() -
           new Date(a.updatedAt).getTime() // اینجا هم باگت رو اصلاح کردم
       );
-
     return {
       conversations
     };

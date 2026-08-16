@@ -13,6 +13,14 @@ export const getStyles = (colors: ColorPalette) =>
         paddingBottom: 16,
         
     },
+    logoRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 40 },
+    logoBox: {
+        width: 34,
+        height: 34,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+    },
     title: { fontSize: 22, fontWeight: "500", color: colors.onSurface, letterSpacing: -0.5 },
     headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
     iconBtn: {

@@ -1,5 +1,4 @@
 import { api } from "@/services/api/api";
-import { usePendingStore } from "@/store/pendingStore";
 import { Message } from "@/types";
 
 export interface SendMessageRequest {
@@ -13,7 +12,8 @@ export interface SendMessageRequest {
 
   mediaMime?: string;
   mediaName?: string;
-  clientId:string;
+  clientId: string;
+  replyToId?: string;
 }
 
 export interface SendMessageResponse {
@@ -36,12 +36,13 @@ export async function sendMessage({
   mediaMime,
 
   mediaName,
-  clientId
+  clientId,
+  replyToId,
 }: SendMessageRequest) {
   const formData = new FormData();
   if (receiverId) formData.append("receiverId", receiverId);
   if (conversationId) formData.append("conversationId", conversationId);
-   formData.append("clientId" , clientId ); 
+  formData.append("clientId", clientId);
   if (text?.trim()) formData.append("text", text.trim());
 
   if (mediaUri) {
@@ -53,7 +54,9 @@ export async function sendMessage({
       name: mediaName,
     } as any);
   }
-
+  if (replyToId) {
+    formData.append("replyToId", replyToId);
+  }
 
   const { data } = await api.post<SendMessageResponse>(
     "/api/messages/send",
@@ -66,7 +69,6 @@ export async function sendMessage({
       },
     },
   );
-
-
+  console.log("data when we sending replay message ", data);
   return data;
 }

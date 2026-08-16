@@ -1,31 +1,42 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { Conversation } from '@/types'
+import { View, Text, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Conversation } from "@/types";
 // import { styles } from '@/assets/styles/ConvoItem.styles';
-import Avatar from './Avatar';
-import { formatTime } from '@/utils/formatTime';
-import { useTheme } from '@/context/ThemeContext';
-import { getStyles } from '@/assets/styles/ConvoItem.styles';
+import Avatar from "./Avatar";
+import { formatTime } from "@/utils/formatTime";
+import { useTheme } from "@/context/ThemeContext";
+import { getStyles } from "@/assets/styles/ConvoItem.styles";
+import { useConversationStore, usePresenceStore } from "@/store";
 
 interface ConvoItemProbs {
-    convo : Conversation ,
-    selected : boolean ,
-    onPress : () => void ,
+  convo: Conversation;
+  selected: boolean;
+  onPress: () => void;
 }
 
-export default function ConvoItem({convo , selected , onPress } : ConvoItemProbs) {
+export default function ConvoItem({
+  convo,
+  selected,
+  onPress,
+}: ConvoItemProbs) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
 
+  //console.log('convo ConvoItem : ' , convo)
 
   const name = convo.participant?.name || "User";
   const avatar = convo.participant?.avatar;
   const online = convo.participant?.isOnline;
   const sub = `@${convo.participant?.handle}`;
 
+  /* const isOnline = usePresenceStore(
+    (state) => state.presence[convo.participant?._id]?.online ?? false,
+  );
+  console.log('convo isOnline ' , isOnline) */
+
   //console.log('convo online ' , online)
 
-    const lastMsg =
+  const lastMsg =
     convo.lastMessage?.text ||
     (convo.lastMessage?.mediaType === "image"
       ? "📷 photo"
@@ -33,10 +44,7 @@ export default function ConvoItem({convo , selected , onPress } : ConvoItemProbs
         ? "🎥 video"
         : "Start a Conversation");
 
-  
-
   return (
-    
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={onPress}
@@ -54,12 +62,14 @@ export default function ConvoItem({convo , selected , onPress } : ConvoItemProbs
               {sub}
             </Text>
           </View>
-          {convo.updatedAt && <Text style={styles.lastMsg}>{formatTime(convo.updatedAt)}</Text>}
+          {convo.updatedAt && (
+            <Text style={styles.lastMsg}>{formatTime(convo.updatedAt)}</Text>
+          )}
         </View>
         <Text style={styles.lastMsg} numberOfLines={1}>
           {lastMsg}
         </Text>
-       {/* <View style={styles.divider} /> */}
+        {/* <View style={styles.divider} /> */}
       </View>
     </TouchableOpacity>
   );

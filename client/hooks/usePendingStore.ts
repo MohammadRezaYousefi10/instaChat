@@ -1,4 +1,4 @@
-import { usePendingStore as store } from "@/store/pendingStore";
+import { usePendingStore as store } from "@/store";
 
 export const usePendingMessages = () => {
   const pending = store((state) => state.pending);
